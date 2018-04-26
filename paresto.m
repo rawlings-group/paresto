@@ -6,6 +6,10 @@ classdef paresto < handle
     nlp_solver
     % NLP solver options
     nlp_solver_options
+    % NLP presolver plugin
+    nlp_presolver
+    % NLP presolver options
+    nlp_presolver_options
     % Dynamic model
     model
     % ODE/DAE simulator
@@ -52,6 +56,8 @@ classdef paresto < handle
     from_w
     % NLP solver instance
     solver
+    % NLP presolver instance
+    presolver
     % Calculate parametric sensitivities of solver
     fsolver
   end
@@ -87,6 +93,20 @@ classdef paresto < handle
         self.transcription = 'simultaneous';
       end
 
+      % NLP presolver
+      if isfield(model, 'nlp_presolver')
+        self.nlp_presolver = model.nlp_presolver;
+      else
+        self.nlp_presolver = [];
+      end
+
+      % NLP presolver options
+      if isfield(model, 'nlp_presolver_options')
+        self.nlp_presolver_options = model.nlp_presolver_options;
+      else
+        self.nlp_presolver_options = struct;
+      end
+
       % NLP solver
       if isfield(model, 'nlp_solver')
         self.nlp_solver = model.nlp_solver;
@@ -96,18 +116,9 @@ classdef paresto < handle
 
       % NLP solver options
       if isfield(model, 'nlp_solver_options')
-        % User-specific options
         self.nlp_solver_options = model.nlp_solver_options;
       else
-        % Solver specific default options
         self.nlp_solver_options = struct;
-        switch self.nlp_solver
-          case 'ipopt'
-            self.nlp_solver_options.ipopt = struct;
-            %self.nlp_solver_options.ipopt.hessian_approximation = 'limited-memory';
-            %self.nlp_solver_options.ipopt.linear_solver = 'ma27';
-            %self.nlp_solver_options.ipopt.print_level = 1;
-        end
       end
 
       % Have NLP base class calculate multipliers
@@ -483,6 +494,11 @@ classdef paresto < handle
       % Create NLP solver
       nlp = struct('f', J, 'x', w, 'g', g, 'p', d);
       self.solver = casadi.nlpsol('solver', self.nlp_solver, nlp, self.nlp_solver_options);
+
+      % If requested, also create a presolver
+      if ~isempty(self.nlp_presolver)
+        self.presolver = casadi.nlpsol('presolver', self.nlp_presolver, nlp, self.nlp_presolver_options);
+      end
     end
 
     function [r,yy,pp] = optimize(self, d, theta0, lbtheta, ubtheta, calc_hess)
@@ -527,9 +543,20 @@ classdef paresto < handle
       % Flatten d
       d = reshape(d, self.nd, (self.N+1)*self.nsets);
 
+      % Solution guess
+      sol = struct('x', w0, 'lam_x', 0, 'lam_g', 0);
+
+      % Presolve the NLP
+      if ~isempty(self.nlp_presolver)
+        msg('Presolving NLP');
+        sol = self.presolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
+                             'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
+      end
+
       % Solve the NLP
       msg('Solving NLP');
-      sol = self.solver('x0', w0, 'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
+      sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
+                        'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
 
       % Return structure
       r = struct;
