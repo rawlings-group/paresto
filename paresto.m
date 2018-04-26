@@ -646,7 +646,12 @@ classdef paresto < handle
 
       % Get the subset of the reduced Hessian being estimated
       H = r.d2f_dtheta2(conf_ind, conf_ind);
-      inv_hess = inv(H);
+
+      % Ensure symmetry
+      if norm(H-H.', 'inf')>1e-6
+        warning('Reduced Hessian appears nonsymmetric');
+      end
+      H = 0.5*(H.' + H);
 
       % Total number of data points
       n_data = self.nsets*self.N;
@@ -678,6 +683,7 @@ classdef paresto < handle
       end
 
       % Confidence intervals
+      inv_hess = inv(H);
       theta_conf = sqrt(2*n_est/(n_data-n_est)*Fstat*r.f*diag(inv_hess));
     end
   end
