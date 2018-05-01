@@ -634,6 +634,33 @@ classdef paresto < handle
         r.dx_dtheta = reshape(full(dx_dtheta), self.nx, self.N + 1, self.nsets, n_est);
         r.dz_dtheta = reshape(full(dz_dtheta), self.nz, self.N + 1, self.nsets, n_est);
         r.dp_dtheta = full(dp_dtheta);
+
+        % Fields in theta
+        r.thetafields = self.model.p;
+        for e=1:self.nsets
+          % Name suffix (multiple experiments only)
+          if self.nsets>1
+            s = ['_' num2str(e)];
+          else
+            s = '';
+          end
+          % Add initial condition fields
+          for i=1:self.nx
+            r.thetafields{end+1} = [self.model.x{i} '0' s];
+          end
+        end
+
+        % Split up dx_dtheta, dz_dtheta by name
+        for j=1:numel(r.thetafields)
+          for i=1:self.nx
+            r.(['d' self.model.x{i} '_d' r.thetafields{j}]) = ...
+              reshape(r.dx_dtheta(i, :, :, j), self.N + 1, self.nsets);
+          end
+          for i=1:self.nz
+            r.(['d' self.model.z{i} '_d' r.thetafields{j}]) = ...
+              reshape(r.dz_dtheta(i, :, :, j), self.N + 1, self.nsets);
+          end
+        end
       end
 
       % Done
