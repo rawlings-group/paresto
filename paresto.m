@@ -54,6 +54,8 @@ classdef paresto < handle
     to_w
     % Mapping from NLP decision vector
     from_w
+    % Workaround (CasADi issue #2056): Mapping from NLP decision vector
+    from_w_v
     % NLP solver instance
     solver
     % NLP presolver instance
@@ -140,6 +142,7 @@ classdef paresto < handle
       % Prepare the sensitivity analysis
       msg('NLP sensitivity equations');
       self.fsolver = self.solver.forward(numel(self.thetaind));
+      self.from_w_v = self.from_w.map(numel(self.thetaind));
 
       % Done intitializing
       msg('Initialization complete');
@@ -625,6 +628,12 @@ classdef paresto < handle
                        'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g, 'fwd_lbx', seed, 'fwd_ubx', seed);
         sens = -full(fsol.fwd_lam_x);
         r.d2f_dtheta2 = sens(self.thetaind,:);
+
+        % Get forward derivatives w.r.t. theta
+        [dx_dtheta, dz_dtheta, dp_dtheta] = self.from_w_v(fsol.fwd_x);
+        r.dx_dtheta = reshape(full(dx_dtheta), self.nx, self.N + 1, self.nsets, n_est);
+        r.dz_dtheta = reshape(full(dz_dtheta), self.nz, self.N + 1, self.nsets, n_est);
+        r.dp_dtheta = full(dp_dtheta);
       end
 
       % Done
