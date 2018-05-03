@@ -240,7 +240,7 @@ classdef paresto < handle
         z(:,:,i) = full(sol.zf);
         % Evaluate the measurement function
         sol = self.stagefun('t', self.model.tout, 'x', sol.xf, 'z', sol.zf,...
-                            'p', repmat(p, 1, nt), 'd', repmat(d, 1, nt));
+                            'p', p, 'd', d);
       end
     end
 
@@ -577,8 +577,7 @@ classdef paresto < handle
       end
 
       % Split up trajectories by variable name
-      yy = self.outfun('t', repmat(self.tout, 1, self.nsets), 'x', x, 'z', z, ...
-                       'p', repmat(p, 1, (self.N+1)*self.nsets), 'd', d);
+      yy = self.outfun('t', self.tout, 'x', x, 'z', z, 'p', p, 'd', d);
       fn = fieldnames(yy);
       for i=1:numel(fn)
         yy.(fn{i}) = reshape(full(yy.(fn{i})), 1, self.N+1, self.nsets);
