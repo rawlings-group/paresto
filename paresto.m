@@ -30,12 +30,8 @@ classdef paresto < handle
     daefun
     % Stage function
     stagefun
-    % Workaround (CasADi issue #2056): Measurement function (multiple calls)
-    stagefun_v
     % Output function
     outfun
-    % Workaround (CasADi issue #2056): Output function (multiple calls)
-    outfun_v
     % Parameter function
     parfun
     % Collocation equations
@@ -54,8 +50,6 @@ classdef paresto < handle
     to_w
     % Mapping from NLP decision vector
     from_w
-    % Workaround (CasADi issue #2056): Mapping from NLP decision vector
-    from_w_v
     % NLP solver instance
     solver
     % NLP presolver instance
@@ -142,7 +136,6 @@ classdef paresto < handle
       % Prepare the sensitivity analysis
       msg('NLP sensitivity equations');
       self.fsolver = self.solver.forward(numel(self.thetaind));
-      self.from_w_v = self.from_w.map(numel(self.thetaind));
 
       % Done intitializing
       msg('Initialization complete');
@@ -188,6 +181,7 @@ classdef paresto < handle
 
       % Create a simulator
       self.tout = model.tout;
+      self.N = numel(self.tout)-1;
       dae = struct('t', t, 'x', x, 'p', [p; d], 'z', z, 'ode', ode, 'alg', alg);
       opts = struct('grid', self.tout, 'output_t0', true);
       % Use CVODES for ODEs, IDAS for DAEs
@@ -206,10 +200,6 @@ classdef paresto < handle
       self.stagefun = casadi.Function('stagefun', {t, x, z, p, d}, {lsq, alg}, ...
                               {'t', 'x', 'z', 'p', 'd'}, {'lsq', 'alg'});
 
-      % Workaround (CasADi issue #2056): N calls to stagefun
-      self.N = numel(self.tout)-1;
-      self.stagefun_v = self.stagefun.map(self.N+1);
-
       % Output function
       self.outfun = casadi.Function('outfun', {t, x, z, p, d}, struct2cell(yy),...
                                     {'t', 'x', 'z', 'p', 'd'}, fieldnames(yy));
@@ -217,11 +207,6 @@ classdef paresto < handle
       % Parameter function
       self.parfun = casadi.Function('parfun', {p}, struct2cell(pp),...
                                     {'p'}, fieldnames(pp));
-
-      % Workaround (CasADi issue #2056): N+1 calls to stagefun and outfun
-      self.N = numel(self.tout)-1;
-      self.stagefun_v = self.stagefun.map(self.N+1);
-      self.outfun_v = self.outfun.map((self.N+1)*self.nsets);
     end
 
     function [x, z] = simulate(self, d, x0, p, z0)
@@ -254,8 +239,8 @@ classdef paresto < handle
         x(:,:,i) = full(sol.xf);
         z(:,:,i) = full(sol.zf);
         % Evaluate the measurement function
-        sol = self.stagefun_v('t', self.model.tout, 'x', sol.xf, 'z', sol.zf,...
-                             'p', repmat(p, 1, nt), 'd', repmat(d, 1, nt));
+        sol = self.stagefun('t', self.model.tout, 'x', sol.xf, 'z', sol.zf,...
+                            'p', repmat(p, 1, nt), 'd', repmat(d, 1, nt));
       end
     end
 
@@ -333,8 +318,8 @@ classdef paresto < handle
           % Initial algebraic state
           z0 = casadi.MX.sym('z0', self.nz);
           % Solution to the rootfinding problem
-          rfsol = rf('x', [repmat([x0;z0], ord, 1)], 'p', [x0;t;h;p;d]);
-          xfsol = xf_fun(rfsol.g);
+          rfsol = rf('x0', [repmat([x0;z0], ord, 1)], 'p', [x0;t;h;p;d]);
+          xfsol = xf_fun(rfsol.x);
           % Wrap rootfinder in an object with integrator syntax
           self.dynfun = casadi.Function('dynfun', {x0, z0, [t;h;p;d]}, {xfsol}, ...
                       {'x0', 'z0', 'p'}, {'xf'});
@@ -592,8 +577,8 @@ classdef paresto < handle
       end
 
       % Split up trajectories by variable name
-      yy = self.outfun_v('t', repmat(self.tout, 1, self.nsets), 'x', x, 'z', z, ...
-                        'p', repmat(p, 1, (self.N+1)*self.nsets), 'd', d);
+      yy = self.outfun('t', repmat(self.tout, 1, self.nsets), 'x', x, 'z', z, ...
+                       'p', repmat(p, 1, (self.N+1)*self.nsets), 'd', d);
       fn = fieldnames(yy);
       for i=1:numel(fn)
         yy.(fn{i}) = reshape(full(yy.(fn{i})), 1, self.N+1, self.nsets);
@@ -630,7 +615,7 @@ classdef paresto < handle
         r.d2f_dtheta2 = sens(self.thetaind,:);
 
         % Get forward derivatives w.r.t. theta
-        [dx_dtheta, dz_dtheta, dp_dtheta] = self.from_w_v(fsol.fwd_x);
+        [dx_dtheta, dz_dtheta, dp_dtheta] = self.from_w(fsol.fwd_x);
         r.dx_dtheta = reshape(full(dx_dtheta), self.nx, self.N + 1, self.nsets, n_est);
         r.dz_dtheta = reshape(full(dz_dtheta), self.nz, self.N + 1, self.nsets, n_est);
         r.dp_dtheta = full(dp_dtheta);
