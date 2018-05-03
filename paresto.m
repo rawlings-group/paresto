@@ -554,7 +554,7 @@ classdef paresto < handle
       r.theta = w_opt(self.thetaind);
 
       % Fix the parameters and resolve the NLP
-      msg('Reolving NLP with fixed parameters');
+      msg('Resolving NLP with fixed parameters');
       lbw(self.thetaind) = r.theta;
       ubw(self.thetaind) = r.theta;
       sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
@@ -577,7 +577,8 @@ classdef paresto < handle
       end
 
       % Split up trajectories by variable name
-      yy = self.outfun('t', self.tout, 'x', x, 'z', z, 'p', p, 'd', d);
+      yy = self.outfun('t', repmat(self.tout, 1, self.nsets), 'x', x, ...
+                       'z', z, 'p', p, 'd', d);
       fn = fieldnames(yy);
       for i=1:numel(fn)
         yy.(fn{i}) = reshape(full(yy.(fn{i})), 1, self.N+1, self.nsets);
@@ -747,7 +748,7 @@ classdef paresto < handle
         % More informative error message
         warning(ME.message);
         error(['paresto:' fname],...
-              'Failure evaluating model.%s(t, p, y).\n%s\n%s', fname, ...
+              'Failure evaluating model.%s(t, y, p).\n%s\n%s', fname, ...
               ['y has fields ', strjoin(fieldnames(y), ',')], ...
               ['p has fields ', strjoin(fieldnames(p), ',')]);
       end
