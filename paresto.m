@@ -180,7 +180,7 @@ classdef paresto < handle
       self.nd = numel(d);
 
       % Create a simulator
-      self.tout = model.tout;
+      self.tout = model.tout(:)'; % Force row vector.
       self.N = numel(self.tout)-1;
       dae = struct('t', t, 'x', x, 'p', [p; d], 'z', z, 'ode', ode, 'alg', alg);
       opts = struct('grid', self.tout, 'output_t0', true);
