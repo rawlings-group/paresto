@@ -239,7 +239,7 @@ classdef paresto < handle
         x(:,:,i) = full(sol.xf);
         z(:,:,i) = full(sol.zf);
         % Evaluate the measurement function
-        sol = self.stagefun('t', self.model.tout, 'x', sol.xf, 'z', sol.zf,...
+        sol = self.stagefun('t', self.tout, 'x', sol.xf, 'z', sol.zf,...
                             'p', p, 'd', d);
       end
     end
