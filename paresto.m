@@ -823,5 +823,74 @@ classdef paresto < handle
       S = struct(finv_mat, M);
       save('-mat', [finv_mat '.mat'], '-struct', 'S', finv_mat);
     end
+
+    function [x, y, major, minor, bbox] = ellipse (amat, level, n, shift)
+    % [x, y, major, minor, bbox] = ELLIPSE(amat, level, n, shift)
+    %
+    % Given a 2x2 matrix, generate ellipse data for plotting.  The
+    % arguments N and SHIFT are optional.  If N is an empty matrix, a
+    % default value of 100 is used.
+    % James B. Rawlings and John W. Eaton, 2001
+
+      % Check number of arguments
+      narginchk(2, 4);
+
+      % Set default arguments
+      if (nargin < 3)
+        n = 100;
+        if (nargin < 4)
+          shift = [0, 0];
+        end
+      end
+      if (isempty(n))
+        n = 100;
+      end
+
+      ss = size(shift);
+      if (any(ss ~= [1, 2]))
+        if (ss == [2, 1])
+          shift = shift';
+        else
+          error('shift must be a 2-element row vector');
+        end
+      end
+
+      [v, l] = eig(amat / level);
+      dl = diag(l);
+      if (any(imag (dl)) || any(dl <= 0))
+        error('ellipse: amat must be positive definite');
+      end
+
+      % Generate contour data.
+      a = 1 / sqrt(l(1,1));
+      b = 1 / sqrt(l(2,2));
+      t = linspace(0, 2*pi, n)';
+      xt = a * cos(t);
+      yt = b * sin(t);
+
+      % Rotate the contours.
+      ra = atan2(v(2,1), v(1,1));
+      cos_ra = cos(ra);
+      sin_ra = sin(ra);
+      x = xt * cos_ra - yt * sin_ra + shift(1);
+      y = xt * sin_ra + yt * cos_ra + shift(2);
+
+      % Endpoints of the major and minor axes.
+      minor = (v * diag([a, b]))';
+      major = minor;
+      major(2,:) = -major(1,:);
+      minor(1,:) = -minor(2,:);
+      t = [1; 1] * shift;
+      major = major + t;
+      minor = minor + t;
+
+      % Bounding box for the ellipse using magic formula.
+      ainv = inv(amat);
+      xbox = sqrt(level * ainv(1,1));
+      ybox = sqrt(level * ainv(2,2));
+      bbox = [xbox ybox; xbox -ybox; -xbox -ybox; -xbox ybox; xbox ybox];
+      t = [1; 1; 1; 1; 1] * shift;
+      bbox = bbox + t;
+    end
   end
 end
