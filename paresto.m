@@ -665,6 +665,15 @@ classdef paresto < handle
         alpha = 0.95;
       end
 
+      % Number of parameters being estimated
+      n_est = numel(conf_ind);
+
+      % Quick return if n_est = 0
+      if n_est==0
+        theta_conf = [];
+        return
+      end
+
       % Get the subset of the reduced Hessian being estimated
       H = r.d2f_dtheta2(conf_ind, conf_ind);
 
@@ -674,30 +683,19 @@ classdef paresto < handle
       end
       H = 0.5*(H.' + H);
 
-      % Inspect the eigenvalues
+      % Inspect the eigenvalues, recursive call if non-positive eigenvalues
       [v,e] = eig(H);
       e = diag(e);
-      if (any(e<=0))
-        i = find(e<=0);
-        error('Reduced Hessian is not positive definite.\n%s%s, %s (%s)',...
-              'Estimated theta indices with nonpositive eigenvalues: ', ...
-              ['[' num2str(conf_ind(i)) ']'],...
-              ['i.e. [' strjoin(r.thetafields(conf_ind(i)), ',') ']'],...
-              ['values: ' num2str(e(i))]);
-      elseif (any(e<1e-10))
-        i = find(e<1e-10);
-        warning('Reduced Hessian is almost singular.\n%s%s, %s (%s)',...
-          'Estimated theta indices with small eigenvalues: ', ...
-          ['[' num2str(conf_ind(i)) ']'],...
-          ['i.e. [' strjoin(r.thetafields(conf_ind(i)), ',') ']'],...
-          ['values: ' num2str(e(i))]);
+      if (any(e<1e-10))
+        theta_conf = inf(n_est, 1);
+        i = find(e>=1e-10);
+        % Call recursively
+        theta_conf(i) = self.confidence(r, conf_ind(i), alpha);
+        return;
       end
 
       % Total number of data points
       n_data = self.nsets*self.N;
-
-      % Number of parameters being estimated
-      n_est = numel(conf_ind);
 
       % Calculate Fstat
       try
