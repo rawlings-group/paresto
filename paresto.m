@@ -743,7 +743,7 @@ classdef paresto < handle
         si = s{i};
 
         % Get dimension
-        if isfield(self.model, 'dim') & isfield(self.model.dim, si)
+        if isfield(self.model, 'dim') && isfield(self.model.dim, si)
           d = self.model.dim.(si);
         else
           d = 1; % scalar by default
