@@ -20,7 +20,10 @@
 model = struct;
 model.transcription = 'shooting';
 model.x = {'VR', 'nA', 'nB', 'nC', 'nD'};
-model.p = {'k1', 'k2', 'cBf'};
+model.p = {'k', 'cBf'};
+
+% Non-scalar dimensions
+model.dim.k = 2;
 
 % Dependent variables with definitions
 model.y = {'lc'};
@@ -31,10 +34,10 @@ model.d = {'Qf', 'lc_m'};
 
 % ODE right-hand-side
 model.ode = @(t, v, p) {v.Qf,...
-                        -p.k1*v.nA*v.nB/v.VR,...
-                        v.Qf*p.cBf - v.nB*(p.k1*v.nA + p.k2*v.nC)/v.VR,...
-                        v.nB*(p.k1*v.nA - p.k2*v.nC)/v.VR,...
-                        p.k2*v.nC*v.nB/v.VR};
+                        -p.k(1)*v.nA*v.nB/v.VR,...
+                        v.Qf*p.cBf - v.nB*(p.k(1)*v.nA + p.k(2)*v.nC)/v.VR,...
+                        v.nB*(p.k(1)*v.nA - p.k(2)*v.nC)/v.VR,...
+                        p.k(2)*v.nC*v.nB/v.VR};
 
 % Relative least squares objective function
 model.lsq = @(t, v, p) {v.lc_m/v.lc - 1};

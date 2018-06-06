@@ -739,11 +739,21 @@ classdef paresto < handle
       % Create symbols
       a = cell(1,n);
       for i=1:n
+        % Component name
+        si = s{i};
+
+        % Get dimension
+        if isfield(self.model, 'dim') & isfield(self.model.dim, si)
+          d = self.model.dim.(si);
+        else
+          d = 1; % scalar by default
+        end
+
         % Create symbol
-        a{i} = casadi.SX.sym(s{i});
+        a{i} = casadi.SX.sym(si, d);
         % Make sure that it does not already exist in v
-        assert(~isfield(v, s{i}), ['Duplicate expression: ' s{i}]);
-        v.(s{i}) = a{i};
+        assert(~isfield(v, si), ['Duplicate expression: ' si]);
+        v.(si) = a{i};
       end
       a = vertcat(a{:});
     end
