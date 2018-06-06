@@ -150,28 +150,28 @@ classdef paresto < handle
 
       % Free parameters
       pp = struct;
-      [p,pp] = paresto.str2sym(model.p, pp);
+      [p,pp] = self.str2sym('p', pp);
 
       % Continuous variables
       yy = struct;
-      [x,yy] = paresto.str2sym(model.x, yy); % Differential states
-      [z,yy] = paresto.str2sym(model.z, yy); % Algebraic variables
-      [d,yy] = paresto.str2sym(model.d, yy); % Measurements, data
+      [x,yy] = self.str2sym('x', yy); % Differential states
+      [z,yy] = self.str2sym('z', yy); % Algebraic variables
+      [d,yy] = self.str2sym('d', yy); % Measurements, data
 
       % Additional outputs
-      y_def = paresto.fun2sym(model, 'h', t, yy, pp);
-      [~,yy] = paresto.str2sym(model.y, yy);
+      y_def = self.fun2sym('h', t, yy, pp);
+      [~,yy] = self.str2sym('y', yy);
       assert(numel(model.y)==numel(y_def));
       for i=1:numel(model.y)
         yy.(model.y{i}) = y_def(i);
       end
 
       % DAE
-      ode = paresto.fun2sym(model, 'ode', t, yy, pp);
-      alg = paresto.fun2sym(model, 'alg', t, yy, pp);
+      ode = self.fun2sym('ode', t, yy, pp);
+      alg = self.fun2sym('alg', t, yy, pp);
 
       % Least squares objective
-      lsq = paresto.fun2sym(model, 'lsq', t, yy, pp);
+      lsq = self.fun2sym('lsq', t, yy, pp);
 
       % Dimensions
       self.nx = numel(x);
@@ -724,10 +724,11 @@ classdef paresto < handle
       inv_hess = inv(H);
       theta_conf = sqrt(2*n_est/(n_data-n_est)*Fstat*r.f*diag(inv_hess));
     end
-  end
-  methods(Static = true)
-    function [a,v] = str2sym(s, v)
-      % [A,V] = STR2SYM(S,V) Create CasADi symbols from cell array of names
+
+    function [a,v] = str2sym(self, fname, v)
+      % [A,V] = STR2SYM(SELF,FNAME,V) Create CasADi symbols from cell array of names
+      assert(isfield(self.model, fname))
+      s = self.model.(fname);
       assert(iscell(s));
       n = numel(s);
       % Quick return
@@ -747,10 +748,10 @@ classdef paresto < handle
       a = vertcat(a{:});
     end
 
-    function a = fun2sym(model, fname, t, y, p)
-      % A = FUN2SYM(MODEL, FNAME, T, Y, P) Create symbols from function handle
+    function a = fun2sym(self, fname, t, y, p)
+      % A = FUN2SYM(SELF,FNAME,T,Y,P) Create symbols from function handle
       % Quick return if not provided
-      if ~isfield(model, fname)
+      if ~isfield(self.model, fname)
         r = struct;
         a = casadi.SX(0, 1);
         return;
@@ -758,7 +759,7 @@ classdef paresto < handle
       % Create struct
       try
         % User provided function
-        a = model.(fname)(t, y, p);
+        a = self.model.(fname)(t, y, p);
         assert(iscell(a), 'Expected cell output')
         a = vertcat(a{:});
       catch ME
@@ -770,7 +771,9 @@ classdef paresto < handle
               ['p has fields ', strjoin(fieldnames(p), ',')]);
       end
     end
+  end
 
+  methods(Static = true)
     function [tau_root, C, D, B] = coll_coeff(ord)
       % [TAU_ROOT, C, D, B] = COLL_COEFF(ORD) Get collocation coefficients
 
