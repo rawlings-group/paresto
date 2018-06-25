@@ -75,6 +75,9 @@ model.lsq_ind = lc_ind'; % only include lc_ind in objective
 % Create a paresto instance
 pe = paresto(model);
 
+% Number of time points
+N = numel(tout);
+
 % Solution in the book
 nA0 = 2.35;
 k1 = 2500;
@@ -91,8 +94,48 @@ lbtheta = [lbp; lbic];
 ubtheta = [ubp; ubic];
 theta0 = [p0; ic0];
 
+
+model.x = {'VR', 'nA', 'nB', 'nC', 'nD'};
+
+
+% Solution guesses, fixed parameters values
+sol = struct;
+sol.k = [k1; 0.9*k2];
+sol.cBf = teaf;
+sol.VR = VR0;
+sol.nA = 1.1*nA0;
+sol.nB = 0;
+sol.nC = 0;
+sol.nD = 0;
+
+% Lower bounds
+lb = struct;
+lb.k = [k1; 0.5*k2];
+lb.cBf = teaf;
+lb.VR = [VR0, -inf(1, N-1)];
+lb.nA = [0.5*nA0, -inf(1, N-1)];
+lb.nB = [0, -inf(1, N-1)];
+lb.nC = [0, -inf(1, N-1)];
+lb.nD = [0, -inf(1, N-1)];
+
+% Upper bounds
+ub = struct;
+ub.k = [k1; 1.5*k2];
+ub.cBf = teaf;
+ub.VR = [VR0, inf(1, N-1)];
+ub.nA = [1.5*nA0, inf(1, N-1)];
+ub.nB = [0, inf(1, N-1)];
+ub.nC = [0, inf(1, N-1)];
+ub.nD = [0, inf(1, N-1)];
+
+%sol
+%lb
+%ub
+%error('a');
+
 % Estimate parameters
-[est,v,p] = pe.optimize([Qf'; lc_m'], theta0, lbtheta, ubtheta);
+p0
+[est,v,p] = pe.optimize([Qf'; lc_m'], sol, lb, ub);
 est.theta
 est.d2f_dtheta2
 

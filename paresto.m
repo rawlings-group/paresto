@@ -489,10 +489,30 @@ classdef paresto < handle
       end
     end
 
-    function [r,yy,pp] = optimize(self, d, theta0, lbtheta, ubtheta, calc_hess)
+    function [r,yy,pp] = optimize(self, d, sol, lb, ub, calc_hess)
       % [R,V] = OPTIMIZE(SELF, D, PHI0, LBPHI, UBPHI, CALC_HESS) Optimize
       % Solve parameter estimation problem and perform a sensitivity analysis
       % of the solution.
+
+      % Get parameters
+      p0 = self.struct2vec(sol, 'p', 1, []);
+      lbp = self.struct2vec(lb, 'p', 1, -inf);
+      ubp = self.struct2vec(ub, 'p', 1, inf);
+
+      % Get state trajectories
+      x0 = self.struct2vec(sol, 'x', self.nsets*(self.N + 1), []);
+      lbx = self.struct2vec(lb, 'x', self.nsets*(self.N + 1), -inf);
+      ubx = self.struct2vec(ub, 'x', self.nsets*(self.N + 1), inf);
+
+      % Get algebraic trajectories
+      z0 = self.struct2vec(sol, 'z', self.nsets*(self.N + 1), []);
+      lbz = self.struct2vec(lb, 'z', self.nsets*(self.N + 1), -inf);
+      ubz = self.struct2vec(ub, 'z', self.nsets*(self.N + 1), inf);
+
+      % Translate to initial guess and bound on w
+      w0 = self.to_w(x0, z0, p0);
+      lbw = self.to_w(lbx, lbz, lbp);
+      ubw = self.to_w(ubx, ubz, ubp);
 
       % Log message with timings
       msg = @(m) fprintf('paresto.optimize (t=%g ms): %s\n', 1000*toc, m);
@@ -507,26 +527,6 @@ classdef paresto < handle
       assert(size(d, 1)==self.nd);
       assert(size(d, 2)==self.N+1);
       assert(size(d, 3)==self.nsets);
-      assert(numel(theta0)==numel(self.thetaind));
-      assert(numel(lbtheta)==numel(self.thetaind));
-      assert(numel(ubtheta)==numel(self.thetaind));
-
-      % Bounds
-      lbw = -inf(self.nw, 1);
-      ubw = inf(self.nw, 1);
-      lbw(self.thetaind) = lbtheta;
-      ubw(self.thetaind) = ubtheta;
-
-      % Solution guess
-      p_guess = theta0(1:self.np);
-      x0_guess = reshape(theta0(self.np+1:end), self.nx, self.nsets);
-      x_guess = zeros(self.nx, self.N + 1, self.nsets);
-      for e=1:self.nsets
-        x_guess(:,:,e) = repmat(x0_guess(:,e), 1, self.N + 1);
-      end
-      x_guess = reshape(x_guess, size(x_guess, 1), []);
-      z_guess = zeros(self.nz, (self.N + 1)*self.nsets);
-      w0 = self.to_w(x_guess, z_guess, p_guess);
 
       % Flatten d
       d = reshape(d, self.nd, (self.N+1)*self.nsets);
@@ -726,7 +726,7 @@ classdef paresto < handle
     end
 
     function [a,v] = str2sym(self, fname, v)
-      % [A,V] = STR2SYM(SELF,FNAME,V) Create CasADi symbols from cell array of names
+      % [A,V] = STR2SYM(SELF,FNAME,V) Create CasADi symbols
       assert(isfield(self.model, fname))
       s = self.model.(fname);
       assert(iscell(s));
@@ -780,6 +780,58 @@ classdef paresto < handle
               ['y has fields ', strjoin(fieldnames(y), ',')], ...
               ['p has fields ', strjoin(fieldnames(p), ',')]);
       end
+    end
+
+    function v = struct2vec(self, s, fname, nrhs, def)
+      % V = STRUCT2VEC(SELF,S,FNAME,NRHS) Get vector from structure
+
+      % Optional argument
+      narginchk(4, 5);
+      assert(isempty(def) || numel(def)==1);
+
+      assert(isfield(self.model, fname))
+      ff = self.model.(fname);
+      assert(iscell(ff));
+      n = numel(ff);
+      % Quick return
+      if n==0
+        v = [];
+        return
+      end
+      % Create symbols
+      v = cell(1,n);
+      for i=1:n
+        % Component name
+        f = ff{i};
+        % Get dimension
+        if isfield(self.model, 'dim') && isfield(self.model.dim, f)
+          d = self.model.dim.(f);
+        else
+          d = 1; % scalar by default
+        end
+        % Get value
+        if isfield(s, f)
+          vi = s.(f);
+        elseif isempty(def)
+          error('%s has not been provided', f);
+        else
+          vi = def; % default value
+        end
+        % Correct number of elements if needed
+        if size(vi, 1)~=d
+          assert(mod(d, size(vi, 1))==0);
+          vi = repmat(vi, d/size(vi, 1), 1);
+        end
+        % Correct number of right-hand-sides if needed
+        if size(vi, 2)~=nrhs
+          assert(mod(nrhs, size(vi, 2))==0);
+          vi = repmat(vi, 1, nrhs/size(vi, 2));
+        end
+        % Save to list
+        v{i} = vi;
+      end
+      % Concatenate
+      v = vertcat(v{:});
     end
   end
 
