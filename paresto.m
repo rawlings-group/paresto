@@ -495,19 +495,19 @@ classdef paresto < handle
       % of the solution.
 
       % Get parameters
-      p0 = self.struct2vec(sol, 'p', 1, []);
-      lbp = self.struct2vec(lb, 'p', 1, -inf);
-      ubp = self.struct2vec(ub, 'p', 1, inf);
+      p0 = self.struct2vec(sol, 'p', 1, 1, []);
+      lbp = self.struct2vec(lb, 'p', 1, 1, -inf);
+      ubp = self.struct2vec(ub, 'p', 1, 1, inf);
 
       % Get state trajectories
-      x0 = self.struct2vec(sol, 'x', self.nsets*(self.N + 1), []);
-      lbx = self.struct2vec(lb, 'x', self.nsets*(self.N + 1), -inf);
-      ubx = self.struct2vec(ub, 'x', self.nsets*(self.N + 1), inf);
+      x0 = self.struct2vec(sol, 'x', self.N + 1, self.nsets, []);
+      lbx = self.struct2vec(lb, 'x', self.N + 1, self.nsets, -inf);
+      ubx = self.struct2vec(ub, 'x', self.N + 1, self.nsets, inf);
 
       % Get algebraic trajectories
-      z0 = self.struct2vec(sol, 'z', self.nsets*(self.N + 1), []);
-      lbz = self.struct2vec(lb, 'z', self.nsets*(self.N + 1), -inf);
-      ubz = self.struct2vec(ub, 'z', self.nsets*(self.N + 1), inf);
+      z0 = self.struct2vec(sol, 'z', self.N + 1, self.nsets, []);
+      lbz = self.struct2vec(lb, 'z', self.N + 1, self.nsets, -inf);
+      ubz = self.struct2vec(ub, 'z', self.N + 1, self.nsets, inf);
 
       % Translate to initial guess and bound on w
       w0 = self.to_w(x0, z0, p0);
@@ -782,11 +782,10 @@ classdef paresto < handle
       end
     end
 
-    function v = struct2vec(self, s, fname, nrhs, def)
+    function v = struct2vec(self, s, fname, nrhs, nsets, def)
       % V = STRUCT2VEC(SELF,S,FNAME,NRHS) Get vector from structure
 
-      % Optional argument
-      narginchk(4, 5);
+      % Default argument
       assert(isempty(def) || numel(def)==1);
 
       assert(isfield(self.model, fname))
@@ -817,6 +816,8 @@ classdef paresto < handle
         else
           vi = def; % default value
         end
+        % Make sure at most 3 dimensions
+        assert(ndims(vi)<=3);
         % Correct number of elements if needed
         if size(vi, 1)~=d
           assert(mod(d, size(vi, 1))==0);
@@ -826,6 +827,15 @@ classdef paresto < handle
         if size(vi, 2)~=nrhs
           assert(mod(nrhs, size(vi, 2))==0);
           vi = repmat(vi, 1, nrhs/size(vi, 2));
+        end
+        % Correct number of data sets if needed
+        if size(vi, 3)~=nsets
+          assert(mod(nsets, size(vi, 3))==0);
+          vi = repmat(vi, 1, 1, nsets/size(vi, 3));
+        end
+        % Flatten second and third dimensions, if needed
+        if size(vi, 3)~=1
+          vi = reshape(vi, size(vi, 1), []);
         end
         % Save to list
         v{i} = vi;

@@ -94,10 +94,6 @@ lbtheta = [lbp; lbic];
 ubtheta = [ubp; ubic];
 theta0 = [p0; ic0];
 
-
-model.x = {'VR', 'nA', 'nB', 'nC', 'nD'};
-
-
 % Solution guesses, fixed parameters values
 sol = struct;
 sol.k = [k1; 0.9*k2];
@@ -128,13 +124,7 @@ ub.nB = [0, inf(1, N-1)];
 ub.nC = [0, inf(1, N-1)];
 ub.nD = [0, inf(1, N-1)];
 
-%sol
-%lb
-%ub
-%error('a');
-
 % Estimate parameters
-p0
 [est,v,p] = pe.optimize([Qf'; lc_m'], sol, lb, ub);
 est.theta
 est.d2f_dtheta2
