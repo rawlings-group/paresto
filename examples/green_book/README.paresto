@@ -1,0 +1,93 @@
+This file lists the m-files that use paresto/casadi for parameter
+estimation examples and exercises in the text,
+"Chemical Reactor Analysis and Design Fundamentals," by
+J.B. Rawlings and J.G. Ekerdt, Nob Hill Publishing. 
+
+
+Chapter 9.
+
+* adsone.m:  estimate parameters from a single adsorption isotherm data.
+Figure 9.15, page 526, Example 9.3.
+
+* adsall.m:  estimate parameters from multiple adsorption isotherm data.
+Figure 9.16, page 527, Example 9.3.
+
+* batch_data_solution.m: batch reactor data, nth order reaction.
+Figure 9.38, page 563, Exercise 9.3.
+Requires: batch_data.dat
+
+* bvsm.m:  estimate initial condition and two rate constants from
+  Kodak's semi-batch reactor data.  
+Figures 9.31, 9.32, 9.33, 9.34, pages 551-553, Section 9.3.
+Requires: lc.dat, flow.dat
+
+* bvsm_red.m:  Reduce model; estimate initial condition and ratio of
+  rate constants from Kodak's semi-batch reactor data.
+Figures 9.35, 9.36, 9.37, pages 556-558, Section 9.3.
+Requires: lc.dat, flow.dat lcsim.dat
+
+* estdiff.m:  rate constant and order for nth order kinetics from batch data. 
+Exercise 9.5,  Solution manual: Figures S:9.13, S:9.14, S:9.15, page 297.
+Requires: batch_noise.dat
+
+* fitrtd.m:  Exercise 9.6 and Exercise 8.11, fit residence time
+  distribution data. 
+Figure 8.41, Exercise 8.11, page 491.
+Exercise 9.6, page 565. Solution manual: Figure S:9.16, page 299.
+Requires: ch9selecrtd.dat
+
+* hbv_det.m: estimates six rate constants in deterministic hepatitis B virus model.
+Figures 9.23, 9.24, 9.26, page 542, Example 9.5.
+
+* hbv_red.m: estimates four rate constants of reduced hepatitis B virus model.
+Page 547. Doesn't make a figure, provides the parameter estimates and confidence
+intervals.
+
+* react2rev.m: Estimates rate constant, two reaction orders, and two
+reactant initial conditions from single and multiple batch reactor experiments.
+Figures 9.40, 9.41,  Exercise 9.11, page 567.  Solution manual,  pages 307-308.
+Requires: react2rev_data.dat
+
+Appendix
+* ABC.m: Estimate two rate constants in series reaction A->B->C with
+batch data
+Figure A.10, page 658, Example A.5
+Requires: ABC_data.dat
+
+
+* Sfirstorder.m: Sensitivity calculation for rate constant and initial
+  condition for first-order batch reactor simulation
+Figure A.3, page 650, Example A.2
+
+
+
+TO-DO list; 6/1/2019
+
+1. Sfirstorder.m has a fake optimization problem in order to do a
+sensitivity calculation.  Add a function pe.sensitivity so that we
+don't need to run pe.optimize to get sensitivities.
+
+2. When estimating state initial conditions, must supply upper and
+lower bounds for the entire trajectories as well as the IC. The
+trajectory bounds should default to +/- Inf so the user doesn't have
+to specify these.
+
+Especially look at this code segment in react2rev.m, which  has two
+experiments.
+
+for i = 1: nsets
+  lbtheta.ca(:,:,i) = [0.5*theta0.ca(:,:,i), -inf(1, nts-1)];
+  lbtheta.cb(:,:,i) = [0.5*theta0.cb(:,:,i), -inf(1, nts-1)];
+  ubtheta.ca(:,:,i) = [1.5*theta0.ca(:,:,i), inf(1, nts-1)];
+  ubtheta.cb(:,:,i) = [1.5*theta0.cb(:,:,i), inf(1, nts-1)];
+endfor
+
+That is *not* very friendly for the average user.
+
+3. We have parameters as a sctruct with parameter names, but
+confidence limits as a vector with numbers. Shouldn't mix these two
+conventions.
+
+4. Document paresto's arguments and functions so we can read about
+functionality not shown in the small set of examples.
+
