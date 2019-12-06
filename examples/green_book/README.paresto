@@ -91,3 +91,26 @@ conventions.
 4. Document paresto's arguments and functions so we can read about
 functionality not shown in the small set of examples.
 
+
+UPDATE on TO-DO list; 12/2019
+
+2. JBR modfied paresto.m to take a single argument, the state IC, when
+supplying the lower and upper bounds for estimating the state IC;
+paresto supplies default values (+/- Inf) for the remaining time points.
+
+The "unfriendly" code above from react2rev.m is now replaced by:
+
+lbtheta.ca = 0.5*theta0.ca;
+lbtheta.cb = 0.5*theta0.cb;
+ubtheta.ca = 1.5*theta0.ca;
+ubtheta.cb = 1.5*theta0.cb;
+
+This issue is closed.
+
+5. A new parameter, print_level, was added to paresto call to control
+output.  Not setting print_level (default) or settting it to zero
+suppresses all (paresto and ipopt) output. Setting it to any value not
+zero enables output from paresto on timing and ipopt on optimization
+progress.
+
+
