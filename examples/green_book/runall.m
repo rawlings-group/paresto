@@ -19,7 +19,7 @@ if isequal(doplots, 'off')
 end
 
 % Make sure user has the required packages.
-book_setup('error');
+runall_setup('error');
 
 % Set some local printing options if octave.
 if isOctave()
@@ -48,18 +48,18 @@ getnewplots = @() setdiff(get(0, 'children'), initialfigures);
 fprintf('\nRunning book scripts.\n\n');
 bookfigures = {
 	       %% Only runs unique figure scripts.
-	       'adsone.m';
-	       'adsall.m';
-	       'batch_data_solution.m';
-	       'bvsm.m';
-	       'bvsm_red.m';
-	       'estdiff.m';
-	       'fitrtd.m';
-	       'hbv_det.m';
-	       'hbv_red.m';
-	       'react2rev.m';
-	       'ABC.m';
-	       'Sfirstorder.m';
+	       'adsone';
+	       'adsall';
+	       'batch_data_solution';
+	       'bvsm';
+	       'bvsm_red';
+	       'estdiff';
+	       'fitrtd';
+	       'hbv_det';
+	       'hbv_red';
+	       'react2rev';
+	       'ABC';
+	       'Sfirstorder';
 };
 failures = cell(0, 1);
 for i = 1:length(bookfigures)
@@ -111,17 +111,18 @@ function [err, figtime] = runmain(fig)
     %
     % Changes to the directory of of the given figure and runs main.m, returning
     % any error message. Afterwards, changes back to the original directory.
-    olddir = cd(fig);
-    dircleanup = onCleanup(@() cd(olddir));
-    oldpath = path();
-    pathcleanup = onCleanup(@() path(oldpath));
+    ## olddir = cd(fig);
+    ## dircleanup = onCleanup(@() cd(olddir));
+    ## oldpath = path();
+    ## pathcleanup = onCleanup(@() path(oldpath));
     
     figure(); % Avoids issues with reusing old figures.
     figtime = tic();
     if isOctave()
-        err = runscript_octave('main');
+      pkg load statistics
+      err = runscript_octave(fig);
     else
-        err = runscript_matlab('main');
+      err = runscript_matlab(fig);
     end
     figtime = toc(figtime);
 end%function
