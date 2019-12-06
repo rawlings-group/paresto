@@ -113,4 +113,10 @@ suppresses all (paresto and ipopt) output. Setting it to any value not
 zero enables output from paresto on timing and ipopt on optimization
 progress.
 
+6. JBR added a new file, runall.m.  Invoking runall.m in octave after
+a change to paresto.m runs all examples listed in the green_book
+directory, and prints error messages for any examples that fail. After
+running this test, the proposed update to paresto.m should not break
+any calculations in the textbook listed above or its solution manual.
+
 
