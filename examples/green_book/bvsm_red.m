@@ -110,37 +110,21 @@ theta0.VR = VR0;
 theta0.eps2 = 0;
 
 % Lower bounds for parameters
+% We aren't estimating cBf and VR0
 lb = theta0;
 lb.nA0 = 0.5*theta0.nA0;
 lb.k = 0.5*theta0.k;
-% We aren't estimating cBf and VR0
-lb.VR = [theta0.VR, -inf(1,N-1)]; %zeros(1,N-1)];
-lb.eps2 = [theta0.eps2, -inf(1,N-1)]; %zeros(1,N-1)];
+lb.VR = theta0.VR;
+lb.eps2 = theta0.eps2;
 
 
 % Upper bounds for parameters
 ub = theta0;
 ub.nA0 = 1.5*theta0.nA0;
 ub.k = 1.5*theta0.k;
+ub.VR = theta0.VR;
+ub.eps2 = theta0.eps2;
 
-ub.VR = [theta0.VR, inf(1,N-1)];;
-ub.eps2 = [theta0.eps2, inf(1,N-1)];
-
-%p0 =  [vrdiclo; k1k2ratio; teaf; VR0];
-%lbp = p0;
-%est_ind = [1, 2]; % index of parameters to estimate; the rest are constants
-%lbp(est_ind) = 0.5*p0(est_ind);
-%ubp = p0
-%%ubp(est_ind) = 2.0*p0(est_ind);
-%ubp(est_ind) = 1.5*p0(est_ind);
-%ic0 = [VR0; 0];
-%lbic = ic0;
-%ubic = ic0;
-%lbtheta = [lbp; lbic];
-%ubtheta = [ubp; ubic];
-%theta0 = [p0; ic0];
-
-%y_ac = pe.simulate([Qf'; lc_m'], [VR0; 0], p0);
 
 %% Estimate parameters
 more off
@@ -276,7 +260,6 @@ table1ex = [model.tout', v.lc'];
 table2ex = [tlc, lc];
 
 if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
-figure(1)
 subplot(2,2,1)
 hold on
 plot(model.tout, nA)
@@ -309,7 +292,7 @@ legend({'model', 'measurement'});
 xlabel('time (min)')
 title('LC measurement')
 
-figure(2)
+figure()
 plot(xx, yy, bbox(:,1), bbox(:,2), xxex, yyex, bboxex(:,1), bboxex(:,2))
 
 endif %% PLOTTING

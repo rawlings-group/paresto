@@ -72,10 +72,10 @@ theta0.k = k;
 theta0.ca = ca0;
 
 lb.k = theta0.k;
-lb.ca = [theta0.ca, -Inf(1,nts-1)];
+lb.ca = theta0.ca;
 
 ub.k = theta0.k;
-ub.ca = [theta0.ca, Inf(1,nts-1)];
+ub.ca = theta0.ca;
 
 [est, y, p] = pe.optimize(y_ac, theta0, lb, ub);
 

@@ -19,10 +19,6 @@
 
 model=struct;
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-%model.nlp_solver_options.ipopt.print_level = 0;
-model.nlp_solver_options.ipopt.print_level = 5;
-%model.nlp_solver_options.print_time = false;
-%model.transcription = 'shooting';
 
 model.x = {'ca', 'cb', 'cc'};
 model.p = {'k', 'wa', 'wb', 'wc'};
@@ -77,12 +73,15 @@ y_noisy = max(y_noisy, 0);
 logkrinit = [0.80, -1.13, 3.15, -0.77, -0.16, -5.46]';
 p_init = [logkrinit; mweight];
 %% outputs for the initial guess
-y_init = pe.simulate(zeros(3, 1), x0_ac, p_ac);
+y_init = pe.simulate(zeros(3, 1), x0_ac, p_init);
 
 
 %% list of all parameters
 p.k = logkrinit;
 theta0 = p;
+%% initial guess = actual params
+%%theta0.k = logkr;
+
 theta0.ca = x0_ac(1);
 theta0.cb = x0_ac(2);
 theta0.cc = x0_ac(3);
@@ -126,7 +125,7 @@ logkrp = est.theta(est_ind) + 0.5*u(:,i(1));
 pp = [logkrp; mweight];
 yp = pe.simulate(zeros(3,1), x0_ac, pp);
 
-store1 = [model.tout, y_init', [y.ca;y.cb;y.cc]', yp'];
+store1 = [model.tout,  [y.ca;y.cb;y.cc]', y_init', yp'];
 store2 = [model.tout, y_noisy'];
 save hbv_det.dat store2 store1;
 

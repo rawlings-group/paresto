@@ -84,12 +84,12 @@ theta0.ca = 0.8;
 lbtheta = theta0;
 lbtheta.n = small;
 lbtheta.k = small;
-lbtheta.ca = [0.79,-inf(1,pts-1)];
+lbtheta.ca = 0.79;
 
 ubtheta = theta0;
 ubtheta.n = large;
 ubtheta.k = large;
-ubtheta.ca = [0.81,inf(1,pts-1)];
+ubtheta.ca = 0.81;
 
 % Estimate parameters
 [est, y, p] = pe.optimize(ymeas', theta0, lbtheta, ubtheta);

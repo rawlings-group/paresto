@@ -121,22 +121,22 @@ lb = theta0;
 lb.k1 = 0.5*theta0.k1;
 lb.k2 = 0.5*theta0.k2;
 % We aren't estimating cBf 
-lb.VR = [theta0.VR, -inf(1,N-1)]; %zeros(1,N-1)];
-lb.nA = [0.5*theta0.nA, -inf(1,N-1)]; %zeros(1,N-1)];
-lb.nB = [theta0.nB, -inf(1,N-1)];
-lb.nC = [theta0.nC, -inf(1,N-1)];
-lb.nD = [theta0.nD, -inf(1,N-1)];
+lb.VR = theta0.VR;
+lb.nA = 0.5*theta0.nA;
+lb.nB = theta0.nB;
+lb.nC = theta0.nC;
+lb.nD = theta0.nD;
 
 % Upper bounds for parameters
 ub = theta0;
 ub.k1 = 1.5*theta0.k1;
 ub.k2 = 1.5*theta0.k2;
 % We aren't estimating cBf 
-ub.VR = [theta0.VR, inf(1,N-1)]; %zeros(1,N-1)];
-ub.nA = [1.5*theta0.nA, inf(1,N-1)]; %zeros(1,N-1)];
-ub.nB = [theta0.nB, inf(1,N-1)];
-ub.nC = [theta0.nC, inf(1,N-1)];
-ub.nD = [theta0.nD, inf(1,N-1)];
+ub.VR = theta0.VR;
+ub.nA = 1.5*theta0.nA;
+ub.nB = theta0.nB;
+ub.nC = theta0.nC;
+ub.nD = theta0.nD;
 
 % Initial guess, upper and lower bounds for the estimated parameters
 %p0 = [k1; 0.9*k2; teaf];
@@ -168,50 +168,38 @@ data.measurement = [tlc, lc];
 gnuplotsave('bvsm.dat', data);
 
 if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
-clf
-subplot(2,2,1)
-hold on
-plot(model.tout, v.nA)
-plot(model.tout, v.nC)
-plot(model.tout, v.nD)
-legend({'n_A', 'n_C', 'n_D'});
-xlabel('time (min)')
-ylabel('Amount of substance (kmol)')
-title('Amount of substance of species A, C and D versus time')
+  clf
+  subplot(2,2,1)
+  hold on
+  plot(model.tout, v.nA)
+  plot(model.tout, v.nC)
+  plot(model.tout, v.nD)
+  legend({'n_A', 'n_C', 'n_D'});
+  xlabel('time (min)')
+  ylabel('Amount of substance (kmol)')
+  title('Amount of substance of species A, C and D versus time')
 
-subplot(2,2,2)
-hold on
-plot(model.tout, v.nB)
-legend({'n_B'});
-xlabel('time (min)')
-ylabel('Amount of substance (kmol)')
-title('Amount of substance of species B versus time')
+  subplot(2,2,2)
+  hold on
+  plot(model.tout, v.nB)
+  legend({'n_B'});
+  xlabel('time (min)')
+  ylabel('Amount of substance (kmol)')
+  title('Amount of substance of species B versus time')
 
-subplot(2,2,3)
-stairs(model.tout, v.Qf)
-xlabel('time (min)')
-ylabel('flowrate (kg/min)')
-title('Base addition rate')
+  subplot(2,2,3)
+  stairs(model.tout, v.Qf)
+  xlabel('time (min)')
+  ylabel('flowrate (kg/min)')
+  title('Base addition rnate')
 
-subplot(2,2,4)
-hold on
-plot(model.tout, v.lc)
-plot(tlc, lc, 'o')
-ylim([0, 2*max(lc)])
-legend({'model', 'measurement'});
-xlabel('time (min)')
-title('LC measurement')
+  subplot(2,2,4)
+  hold on
+  plot(model.tout, v.lc)
+  plot(tlc, lc, 'o')
+  ylim([0, 2*max(lc)])
+  legend({'model', 'measurement'});
+  xlabel('time (min)')
+  title('LC measurement')
 endif %% PLOTTING
 
-
-## figure(1);
-## %plot measurement and fit
-## plot (measure.time, measure.data, '*', model.tplot, estimates.y)
-## axis ([0,model.tplot(end),0,0.35]);
-## figure(2);
-## %plot c_A, c_C, c_D
-## plot (model.tplot, estimates.x([2,4,5],:))
-## figure(3);
-## %plot c_B
-## plot (model.tplot, estimates.x(3,:))
-## %% TITLE

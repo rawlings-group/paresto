@@ -41,7 +41,7 @@ nac   = 2;
 mac   = 1;
 p_ac = [kac; nac; mac];
 
-parts = {"a", "b", "c"}
+parts = {"a", "b", "c"};
 
 for npart = 1:numel(parts)
 
@@ -85,34 +85,21 @@ theta0.ca = NaN(1,1,nsets);
 theta0.ca(:,:,1:nsets) = x_ac(1,:);
 theta0.cb = NaN(1,1,nsets);
 theta0.cb(:,:,1:nsets) = x_ac(2,:);
-%theta0.ca = 1.1*x_ac(1,:,:);
-%theta0.cb = 1.1*x_ac(2,:,:);
 
 lbtheta = struct;
 lbtheta.k = 0.5*kac;
 lbtheta.n = 0.5*nac;
 lbtheta.m = 0.5*mac;
+lbtheta.ca = 0.5*theta0.ca;
+lbtheta.cb = 0.5*theta0.cb;
 ubtheta = struct;
 ubtheta.k = 1.5*kac;
 ubtheta.n = 1.5*nac;
 ubtheta.m = 1.5*mac;
-lbtheta.ca = NaN(1, nts, nsets);
-lbtheta.cb = NaN(1, nts, nsets);
-ubtheta.ca = NaN(1, nts, nsets);
-ubtheta.cb = NaN(1, nts, nsets);
-for i = 1: nsets
-  lbtheta.ca(:,:,i) = [0.5*theta0.ca(:,:,i), -inf(1, nts-1)];
-  lbtheta.cb(:,:,i) = [0.5*theta0.cb(:,:,i), -inf(1, nts-1)];
-  ubtheta.ca(:,:,i) = [1.5*theta0.ca(:,:,i), inf(1, nts-1)];
-  ubtheta.cb(:,:,i) = [1.5*theta0.cb(:,:,i), inf(1, nts-1)];
-endfor
-%lbtheta.ca(:,:,1) = [0.5*x_ac(1,:,:), -inf(1, nts-1, nsets)];
-%lbtheta.cb = [0.5*x_ac(2,:,:), -inf(1, nts-1, nsets)];
+ubtheta.ca = 1.5*theta0.ca;
+ubtheta.cb = 1.5*theta0.cb;
 
-%ubtheta.ca = [1.5*x_ac(1,:,:), inf(1, nts-1, nsets)];
-%ubtheta.cb = [1.5*x_ac(2,:,:), inf(1, nts-1, nsets)];
-
-est_ind = 1:3 + nsets*2;
+est_ind = 1:(3+ nsets*2);
 
 % Estimate parameters
 [est,y,p] = pe.optimize(y_noisy, theta0, lbtheta, ubtheta);

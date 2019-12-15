@@ -71,9 +71,8 @@ Hgas8 = [34.127, 172.316, ...
 Hads8 = [43.79, 48.97, 51.57, ...
 	 53.09, 54.05, 54.67, 55.20, 55.60, 55.93]';
 
-%%
+
 %% choose a dataset or datasets to fit
-%%
 cadsmeas = [Hads4];
 cgmeas = [Hgas4];
 
@@ -82,9 +81,6 @@ cms0 = 40;
 cmp0 = 0;
 par0 = [Ks0; cms0; cmp0];
 
-%theta0 = [par0; 0];
-%thetalb = [1e-3; 10; 0; 0];
-%thetaub = [5; 200; 100; 0];
 theta0 = struct;
 theta0.Ks = Ks0;
 theta0.cms = cms0;
@@ -109,11 +105,6 @@ thetaub = struct;
 thetaub.Ks = 5;
 thetaub.cms = 200;
 thetaub.cmp = 100;
-
-thetaub.time  = inf;
-
-thetaub.cg = inf;
-thetaub.cads = inf;
 
 est_ind = 1:3;
 

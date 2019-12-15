@@ -63,14 +63,12 @@ theta0.ca = ca0ac;
 ubtheta = struct(); 
 ubtheta.k = large;	 
 ubtheta.n = large;
-%ubtheta.ca = large;
-ubtheta.ca = [large, Inf(1, ntimes-1)];
+ubtheta.ca = large;
 
 lbtheta = struct(); 
 lbtheta.k = small;  
 lbtheta.n = small;  
-%lbtheta.ca = small;
-lbtheta.ca = [small, -Inf(1,ntimes-1)];
+lbtheta.ca = small;
 
 nsets = size(y_noisy,2);
 thetaest = NaN(numel(thetaac), nsets);

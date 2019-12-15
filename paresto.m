@@ -1,5 +1,7 @@
 classdef paresto < handle
   properties
+    % Print level (0 or missing field; no output)
+    print_level
     % Method: Direct collocation or multiple shooting
     transcription
     % NLP solver plugin
@@ -59,11 +61,22 @@ classdef paresto < handle
   end
   methods
     function self = paresto(model)
+
       % Constructor
 
+      % Control output to screen; default to no diagnostic output
       % Log message with timings
-      msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
-      tic;
+      if ~isfield(model, 'print_level')
+      	model.print_level = 0;
+      end
+      if (model.print_level > 0)
+	msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
+	tic;
+      else
+	msg = @(m) fprintf('');
+	model.nlp_solver_options.ipopt.print_level = 0;
+	model.nlp_solver_options.print_time = false;
+     endif
 
       % Fields are empty by default
       f = {'x', 'z', 'p', 'y'};
@@ -495,19 +508,19 @@ classdef paresto < handle
       % of the solution.
 
       % Get parameters
-      p0 = self.struct2vec(sol, 'p', 1, 1, []);
-      lbp = self.struct2vec(lb, 'p', 1, 1, -inf);
-      ubp = self.struct2vec(ub, 'p', 1, 1, inf);
+      p0 = self.struct2vec(sol, 'p', 1, 1, [], 1);
+      lbp = self.struct2vec(lb, 'p', 1, 1, -inf, 1);
+      ubp = self.struct2vec(ub, 'p', 1, 1, inf, 1);
 
       % Get state trajectories
-      x0 = self.struct2vec(sol, 'x', self.N + 1, self.nsets, []);
-      lbx = self.struct2vec(lb, 'x', self.N + 1, self.nsets, -inf);
-      ubx = self.struct2vec(ub, 'x', self.N + 1, self.nsets, inf);
+      x0 = self.struct2vec(sol, 'x', self.N + 1, self.nsets, [], 1);
+      lbx = self.struct2vec(lb, 'x', self.N + 1, self.nsets, -inf, 0);
+      ubx = self.struct2vec(ub, 'x', self.N + 1, self.nsets, inf, 0);
 
       % Get algebraic trajectories
-      z0 = self.struct2vec(sol, 'z', self.N + 1, self.nsets, []);
-      lbz = self.struct2vec(lb, 'z', self.N + 1, self.nsets, -inf);
-      ubz = self.struct2vec(ub, 'z', self.N + 1, self.nsets, inf);
+      z0 = self.struct2vec(sol, 'z', self.N + 1, self.nsets, [], 1);
+      lbz = self.struct2vec(lb, 'z', self.N + 1, self.nsets, -inf, 0);
+      ubz = self.struct2vec(ub, 'z', self.N + 1, self.nsets, inf, 0);
 
       % Translate to initial guess and bound on w
       w0 = self.to_w(x0, z0, p0);
@@ -515,8 +528,12 @@ classdef paresto < handle
       ubw = self.to_w(ubx, ubz, ubp);
 
       % Log message with timings
-      msg = @(m) fprintf('paresto.optimize (t=%g ms): %s\n', 1000*toc, m);
-      tic;
+      if (self.print_level > 0)
+	msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
+	tic;
+      else
+	msg = @(m) fprintf('');
+      end
 
       % calc_hess true by default
       if nargin<6
@@ -782,7 +799,7 @@ classdef paresto < handle
       end
     end
 
-    function v = struct2vec(self, s, fname, nrhs, nsets, def)
+    function v = struct2vec(self, s, fname, nrhs, nsets, def, copy)
       % V = STRUCT2VEC(SELF,S,FNAME,NRHS) Get vector from structure
 
       % Default argument
@@ -822,11 +839,17 @@ classdef paresto < handle
         if size(vi, 1)~=d
           assert(mod(d, size(vi, 1))==0);
           vi = repmat(vi, d/size(vi, 1), 1);
-        end
-        % Correct number of right-hand-sides if needed
-        if size(vi, 2)~=nrhs
+	end
+	% Correct number of right-hand sides if needed
+	if size(vi, 2)~=nrhs
           assert(mod(nrhs, size(vi, 2))==0);
-          vi = repmat(vi, 1, nrhs/size(vi, 2));
+	  %% fill right-hand sides with copy of given vi
+	  fill = 1+size(vi,2):nrhs;
+	  vi = repmat(vi, 1, nrhs/size(vi, 2));
+          if (~copy)
+	    %% -or- overwrite right-hand sides with default
+	    vi(:,fill,:) = def;
+	  end
         end
         % Correct number of data sets if needed
         if size(vi, 3)~=nsets

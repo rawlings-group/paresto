@@ -41,11 +41,11 @@ endif
 model = struct;
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 model.x = {'c1', 'c2'};
-model.p = {'rho', 'alpha', 'cf', 'theta1', 'theta2'};
+model.p = {'rho', 'alpha', 'cf', 'tau1', 'tau2'};
 model.d = {'m_c2'};
 
-model.ode = @(t, x, p) {(p.alpha*p.cf-(p.alpha+p.rho)*x.c1+p.rho*x.c2)/p.theta1, ...
-		      ((p.alpha+p.rho)*x.c1-(1+p.alpha+p.rho)*x.c2)/p.theta2 };
+model.ode = @(t, x, p) {(p.alpha*p.cf-(p.alpha+p.rho)*x.c1+p.rho*x.c2)/p.tau1, ...
+		      ((p.alpha+p.rho)*x.c1-(1+p.alpha+p.rho)*x.c2)/p.tau2 };
 model.lsq = @(t,y,p) {y.c2 - y.m_c2};
 
 c10 = 0;
@@ -53,9 +53,9 @@ c20 = 0;
 rho0 = 0.5;
 alpha = 0.1;
 cf = 1;
-theta1 = 1;
-theta2 = 2;
-parac = [rho0; alpha; cf; theta1; theta2];
+tau1 = 1;
+tau2 = 2;
+parac = [rho0; alpha; cf; tau1; tau2];
 
 tplot = linspace(0,32,75)';
 tmeas = table2(:,1);
@@ -78,8 +78,8 @@ par = struct();
 par.rho = 0.5
 par.alpha = 0.1;
 par.cf = 1;
-par.theta1 = 1;
-par.theta2 = 2;
+par.tau1 = 1;
+par.tau2 = 2;
 par.c1 = 0;
 par.c2 = 0;
 
@@ -87,8 +87,8 @@ lb = struct();
 lb.rho = 0.1;
 lb.alpha = par.alpha;
 lb.cf = par.cf;
-lb.theta1 = par.theta1;
-lb.theta2 = par.theta2;
+lb.tau1 = par.tau1;
+lb.tau2 = par.tau2;
 
 ub = lb;
 ub.rho = 0.95;
@@ -120,8 +120,8 @@ par.k2 = 2;
 par.caf = 1;
 par.cbf = 1;
 par.n   = 2;
-par.theta1 = theta1;
-par.theta2 = theta2;
+par.tau1 = tau1;
+par.tau2 = tau2;
 par.alpha = alpha;
 function res = tworeac (x, p)
   ca1 = x(1);
@@ -132,10 +132,10 @@ function res = tworeac (x, p)
   r21 = p.k2*ca1^p.n;
   r12 = p.k1*ca2*cb2;
   r22 = p.k2*ca2^p.n;
-  R = [ -(r11+r21)*p.theta1;
-        -r11*p.theta1;
-        -(r12+r22)*p.theta2;
-        -r12*p.theta2];
+  R = [ -(r11+r21)*p.tau1;
+        -r11*p.tau1;
+        -(r12+r22)*p.tau2;
+        -r12*p.tau2];
   flow = [ p.alpha*p.caf-(p.alpha+p.rho)*ca1+p.rho*ca2;
            -(p.alpha+p.rho)*cb1+p.rho*cb2;
            -(1+p.alpha)*ca2+(p.alpha+p.rho)*ca1-p.rho*ca2;

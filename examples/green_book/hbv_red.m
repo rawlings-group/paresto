@@ -25,8 +25,6 @@ more off
 model=struct;
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 model.nlp_solver_options.ipopt.print_level = 5;
-%model.nlp_solver_options.print_time = false;
-%model.transcription = 'shooting';
 
 model.x = {'ca', 'cb', 'cc'};
 model.p = {'k', 'wa', 'wb', 'wc'};
@@ -92,7 +90,7 @@ ind = [1, 2, 5, 6];
 del = 1;
 
 theta0 = p;
-theta0.k(ind) += 0.75*del;
+theta0.k(ind) = theta0.k(ind) + 0.75*del;
 theta0.ca = x0_ac(1);
 theta0.cb = x0_ac(2);
 theta0.cc = x0_ac(3);
@@ -100,12 +98,12 @@ theta0.cc = x0_ac(3);
 %% loosen bounds bounds on estimated parameters
 lb = struct();
 lb.k = theta0.k;
-lb.k(ind) += - del;
+lb.k(ind) = lb.k(ind) - del;
 lb.wa = theta0.wa; lb.wb = theta0.wb; lb.wc = theta0.wc;
 
 ub = struct();
 ub.k = theta0.k;
-ub.k(ind) += del;
+ub.k(ind) = ub.k(ind) + del;
 ub.wa = theta0.wa; ub.wb = theta0.wb; ub.wc = theta0.wc;
 
 [est, y, p] = pe.optimize(y_noisy, theta0, lb, ub);
