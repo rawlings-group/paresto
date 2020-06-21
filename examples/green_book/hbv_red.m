@@ -18,6 +18,7 @@
 %% converted to use parest, jbr, 4/24/2007
 %% converted to use paresto (casadi), jbr, 4/13/2018
 %% updated to paresto structs for parameters, jbr, 6/1/2019
+%% updated to revised paresto, jbr, 6/7/2020
 %%
 
 more off

@@ -111,6 +111,7 @@ disp('Estimated parameters and confidence intervals')
 [est.theta(est_ind), theta_conf]
 
 % Plot optimized trajectories
+if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
 figure(npart)
 clf
 for i=1:nsets
@@ -124,5 +125,7 @@ for i=1:nsets
   xlabel('t (min)')
   ylabel('c (mol/L)')
 end
+%% TITLE
+endif %% PLOTTING
 
 endfor

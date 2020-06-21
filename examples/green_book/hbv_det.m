@@ -18,6 +18,7 @@
 
 
 model=struct;
+model.print_level = 1;
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 
 model.x = {'ca', 'cb', 'cc'};

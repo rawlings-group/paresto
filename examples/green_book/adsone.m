@@ -96,7 +96,7 @@ thetalb.Ks = 1E-3;
 thetalb.cms = 10;
 thetalb.cmp = 0;
 
-thetalb.time = 0;
+%thetalb.time = 0;
 
 thetalb.cg = 0;
 thetalb.cads = 0;
@@ -105,6 +105,7 @@ thetaub = struct;
 thetaub.Ks = 5;
 thetaub.cms = 200;
 thetaub.cmp = 100;
+thetaub.time = 0;
 
 est_ind = 1:3;
 

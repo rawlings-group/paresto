@@ -76,7 +76,7 @@ classdef paresto < handle
 	msg = @(m) fprintf('');
 	model.nlp_solver_options.ipopt.print_level = 0;
 	model.nlp_solver_options.print_time = false;
-     endif
+     end
 
       % Fields are empty by default
       f = {'x', 'z', 'p', 'y'};
