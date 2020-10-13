@@ -67,16 +67,16 @@ classdef paresto < handle
       % Control output to screen; default to no diagnostic output
       % Log message with timings
       if ~isfield(model, 'print_level')
-      	model.print_level = 0;
+        model.print_level = 1;
       end
       if (model.print_level > 0)
-	msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
-	tic;
+        msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
+        tic;
       else
-	msg = @(m) fprintf('');
-	model.nlp_solver_options.ipopt.print_level = 0;
-	model.nlp_solver_options.print_time = false;
-     end
+        msg = @(m) fprintf('');
+        model.nlp_solver_options.ipopt.print_level = 0;
+        model.nlp_solver_options.print_time = false;
+      end
 
       % Fields are empty by default
       f = {'x', 'z', 'p', 'y'};
@@ -530,10 +530,10 @@ classdef paresto < handle
 
       % Log message with timings
       if (self.print_level > 0)
-	msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
-	tic;
+        msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
+	      tic;
       else
-	msg = @(m) fprintf('');
+        msg = @(m) fprintf('');
       end
 
       % calc_hess true by default
