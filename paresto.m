@@ -490,7 +490,8 @@ classdef paresto < handle
 
       % Mapping from sensitivitity parameter to w
       to_sens = casadi.Function('to_sens', {w}, {sens}, {'w'}, {'sens'});
-      self.thetaind = full(to_sens(1:numel(w)));
+      thetaind = to_sens(1:numel(w));
+      self.thetaind = full(thetaind);
 
       % Create NLP solver
       nlp = struct('f', J, 'x', w, 'g', g, 'p', d);
