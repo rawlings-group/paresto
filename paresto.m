@@ -76,8 +76,8 @@ classdef paresto < handle
 	msg = @(m) fprintf('');
 	model.nlp_solver_options.ipopt.print_level = 0;
 	model.nlp_solver_options.print_time = false;
-     end
-
+      end
+      self.print_level = model.print_level;
       % Fields are empty by default
       f = {'x', 'z', 'p', 'y'};
       for i=1:numel(f)
@@ -134,6 +134,9 @@ classdef paresto < handle
       self.nlp_solver_options.calc_lam_x = true;
       self.nlp_solver_options.calc_lam_p = true;
 
+      % Do bound projection
+      self.nlp_solver_options.bound_consistency = true;
+      
       % Construct symbolic expressions for the dynamic model
       msg('DAE modeling');
       self.modeling();
@@ -149,7 +152,6 @@ classdef paresto < handle
       % Prepare the sensitivity analysis
       msg('NLP sensitivity equations');
       self.fsolver = self.solver.forward(numel(self.thetaind));
-
       % Done intitializing
       msg('Initialization complete');
     end
@@ -325,8 +327,10 @@ classdef paresto < handle
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
           % Rootfinding solver
-          rf = casadi.rootfinder('rf', 'newton', rfp);
-          % Function that evaluates state at end time
+	  % rf = casadi.rootfinder('rf', 'newton', rfp);
+	  % Suggestion to better handle bad initial guess; Joris Gillis, 9/4/2020
+          rf = casadi.rootfinder('rf', 'newton', rfp,struct('error_on_fail',false,'line_search',false));
+	  % Function that evaluates state at end time
           xf_fun = casadi.Function('xf_fun', {xz}, {xf}, {'xz'}, {'xf'});
           % Initial algebraic state
           z0 = casadi.MX.sym('z0', self.nz);
@@ -365,6 +369,7 @@ classdef paresto < handle
       else
         % Include all
         lsq_ind(:) = 1;
+	self.model.lsq_ind = lsq_ind;
       end
 
       % Sensitivity parameters
@@ -526,7 +531,6 @@ classdef paresto < handle
       w0 = self.to_w(x0, z0, p0);
       lbw = self.to_w(lbx, lbz, lbp);
       ubw = self.to_w(ubx, ubz, ubp);
-
       % Log message with timings
       if (self.print_level > 0)
 	msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
@@ -568,12 +572,13 @@ classdef paresto < handle
 
       % Get the estimated parameters
       w_opt = full(sol.x);
-      r.theta = w_opt(self.thetaind);
+      r.thetavec = w_opt(self.thetaind);
 
       % Fix the parameters and resolve the NLP
       msg('Resolving NLP with fixed parameters');
-      lbw(self.thetaind) = r.theta;
-      ubw(self.thetaind) = r.theta;
+      lbw(self.thetaind) = r.thetavec;
+      ubw(self.thetaind) = r.thetavec;
+
       sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
                    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
 
@@ -639,6 +644,11 @@ classdef paresto < handle
 
         % Fields in theta
         r.thetafields = self.model.p;
+	for i = 1:self.np
+	  field = self.model.p{i};
+	  lbnames.(field) = lb.(field);
+	  ubnames.(field) = ub.(field);
+	end
         for e=1:self.nsets
           % Name suffix (multiple experiments only)
           if self.nsets>1
@@ -646,12 +656,25 @@ classdef paresto < handle
           else
             s = '';
           end
-          % Add initial condition fields
+          % Add initial condition fields; create names for IC bounds
           for i=1:self.nx
-            r.thetafields{end+1} = [self.model.x{i} '0' s];
-          end
+	    % Initial condition field name
+	    ICname = [self.model.x{i} '0' s];
+	    r.thetafields{end+1} = ICname;
+	    if (isfield (lb, self.model.x{i}))
+	      if self.nsets > 1
+		lbnames.(ICname) = lb.(self.model.x{i})(:,:,e);
+		ubnames.(ICname) = ub.(self.model.x{i})(:,:,e);
+	      else
+		lbnames.(ICname) = lb.(self.model.x{i})(:,1);
+		ubnames.(ICname) = ub.(self.model.x{i})(:,1);
+              end
+	    else
+	      lbnames.(ICname) = -inf;
+	      ubnames.(ICname) = inf;
+	    end
+	  end
         end
-
         % Split up dx_dtheta, dz_dtheta by name
         for j=1:numel(r.thetafields)
           for i=1:self.nx
@@ -664,21 +687,33 @@ classdef paresto < handle
           end
         end
       end
-
+      % Return all estimated parameters by name
+      for j = 1: numel(r.thetafields)
+	r.par.(r.thetafields{j}) = r.thetavec(j);
+      end
+      % Store index of estimated parameters not having equality constraints
+      r.conf_ind = find(cell2mat(struct2cell(lbnames)) < cell2mat(struct2cell(ubnames)));
+      % Return by name estimated parameters not having equality constraints
+      for i = 1: numel(r.conf_ind)
+	r.theta.(r.thetafields{r.conf_ind(i)}) = r.thetavec(r.conf_ind(i));
+      end
+      %% Store number of data points in each dataset:
+      %% number time points x length of measurement vector
+      r.n_data = numel(self.model.lsq_ind)*numel(self.model.lsq);
       % Done
       msg('Optimization complete');
     end
 
-    function theta_conf = confidence(self, r, conf_ind, alpha)
+    function conf = confidence(self, r, alpha)
+%    function theta_conf = confidence(self, r, conf_ind, alpha)
       % THETA_CONF = CONFIDENCE(R, CONF_IND, ALPHA): Calculate confidence intervals
 
-      % conf_ind defaults to all
-      if nargin<2 || isempty(conf_ind)
-        conf_ind = 1:numel(self.thetaind);
-      end
+      % conf_ind, index of parameters not having equality constraints,
+      % defined in optimize function
+      conf_ind = r.conf_ind;
 
       % alpha defaults to 0.95
-      if nargin<4
+      if nargin<3
         alpha = 0.95;
       end
 
@@ -693,30 +728,39 @@ classdef paresto < handle
 
       % Get the subset of the reduced Hessian being estimated
       H = r.d2f_dtheta2(conf_ind, conf_ind);
-
       % Ensure symmetry
       if norm(H-H.', 'inf')>1e-6
         warning('Reduced Hessian appears nonsymmetric');
       end
       H = 0.5*(H.' + H);
-
-      % Inspect the eigenvalues, recursive call if non-positive eigenvalues
       [v,e] = eig(H);
       e = diag(e);
-      if (any(e<1e-10))
-        theta_conf = inf(n_est, 1);
-        i = find(e>=1e-10);
-        % Call recursively
-        theta_conf(i) = self.confidence(r, conf_ind(i), alpha);
-        return;
+      %%% Inspect the eigenvalues, recursive call if non-positive eigenvalues
+      %% if (any(e<1e-10))
+      %%   theta_conf = inf(n_est, 1);
+      %%   i = find(e>=1e-10);
+      %%   % Call recursively
+      %%   theta_conf(i) = self.confidence(r, conf_ind(i), alpha);
+      %%   return;
+      %% end
+      % Set small or negative eigenvalues to zero
+      if (min(e) < 1e-10)
+	e(find(e < 1e-10)) = 0;
+	diag_inv_H = zeros(n_est,1);
+	for i = 1:n_est
+	  vi = v(:,i);
+	  diag_inv_H = diag_inv_H + diag(vi*vi')./e(i);
+	end
+      else
+	diag_inv_H = diag(v*diag(1./e)*v');
       end
-
       % Total number of data points
-      n_data = self.nsets*self.N;
+      n_data = self.nsets*r.n_data;
 
-      % Calculate Fstat
+      % Calculate Fstat, bounding box and marginal box
       try
         Fstat = finv(alpha, n_est, n_data-n_est);
+        Fstatm = finv(alpha, 1, n_data-n_est);
       catch ME
         try
           % Try to load finv from a file named e.g. finv95.mat for alpha=0.95
@@ -724,7 +768,8 @@ classdef paresto < handle
           S = load(finv_mat);
           M = S.(finv_mat);
           % Get the value as the corresponding matrix entry
-          Fstat = full(M(n_data-n_est, n_est));
+          Fstat = full(M(n_est, n_data-n_est));
+	  Fstatm = full(M(1, n_data-n_est));
           % Make sure it's not zero (e.g. missing entry in sparse matrix)
           assert(Fstat~=0, 'Entry not available');
         catch ME2
@@ -737,9 +782,17 @@ classdef paresto < handle
         end
       end
 
-      % Confidence intervals
-      inv_hess = inv(H);
-      theta_conf = sqrt(2*n_est/(n_data-n_est)*Fstat*r.f*diag(inv_hess));
+      % Return Hessian, diagonal of inverse, and confidence intervals (bounding and marginal)
+      conf.H =H;
+      conf.diag_inv_H = diag_inv_H;
+      %inv_hess = inv(H);
+      theta_conf = sqrt(2*n_est/(n_data-n_est)*Fstat*r.f*diag_inv_H);
+      theta_marg = sqrt(Fstatm/(Fstat*n_est))*theta_conf;
+      % Return confidence intervals by name
+      for i = 1: n_est
+	conf.bbox.(r.thetafields{r.conf_ind(i)}) = theta_conf(i);
+	conf.mbox.(r.thetafields{r.conf_ind(i)}) = theta_marg(i);
+      end
     end
 
     function [a,v] = str2sym(self, fname, v)
