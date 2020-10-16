@@ -67,11 +67,11 @@ classdef paresto < handle
       % Control output to screen; default to no diagnostic output
       % Log message with timings
       if ~isfield(model, 'print_level')
-      	model.print_level = 0;
+        model.print_level = 1;
       end
       if (model.print_level > 0)
-	msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
-	tic;
+        msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
+        tic;
       else
 	msg = @(m) fprintf('');
 	model.nlp_solver_options.ipopt.print_level = 0;
@@ -495,7 +495,8 @@ classdef paresto < handle
 
       % Mapping from sensitivitity parameter to w
       to_sens = casadi.Function('to_sens', {w}, {sens}, {'w'}, {'sens'});
-      self.thetaind = full(to_sens(1:numel(w)));
+      thetaind = to_sens(1:numel(w));
+      self.thetaind = full(thetaind);
 
       % Create NLP solver
       nlp = struct('f', J, 'x', w, 'g', g, 'p', d);
@@ -533,10 +534,10 @@ classdef paresto < handle
       ubw = self.to_w(ubx, ubz, ubp);
       % Log message with timings
       if (self.print_level > 0)
-	msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
-	tic;
+        msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
+	      tic;
       else
-	msg = @(m) fprintf('');
+        msg = @(m) fprintf('');
       end
 
       % calc_hess true by default
