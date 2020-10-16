@@ -15,22 +15,29 @@
 %% converted to use parest, jbr, 4/24/2007
 %% converted to use paresto (casadi), jbr, 4/13/2018
 %% updated to paresto structs for parameters, jbr, 5/24/2019
+% updated to revised paresto, jbr, 6/7/2020
 
 
-model=struct;
-model.print_level = 1;
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model=struct();
+%model.print_level = 1;
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
+%model.nlp_solver_options.ipopt.print_level = 0;
+%model.nlp_solver_options.print_time = false;
+%model.nlp_solver_options.ipopt.max_iter = 4000;
+model.transcription = 'shooting';
 
 model.x = {'ca', 'cb', 'cc'};
-model.p = {'k', 'wa', 'wb', 'wc'};
+model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'wa', 'wb', 'wc'};
 model.d = {'ma', 'mb', 'mc'};
 
-% Non-scalar dimensions
-model.dim.k = 6;
-
-
 function rhs = hbv_rxs(t, y, p)
-  kr = 10.^(p.k);
+  kr = [ 10.^p.k1, ...
+	 10.^p.k2, ...
+	 10.^p.k3, ...
+	 10.^p.k4, ...
+	 10.^p.k5, ...
+	 10.^p.k6 ];
   rhs = {kr(2)*y.cb - kr(4)*y.ca, ...
          kr(1)*y.ca - kr(2)*y.cb - kr(6)*y.cb*y.cc, ...
          kr(3)*y.ca - kr(5)*y.cc - kr(6)*y.cb*y.cc};
@@ -40,9 +47,12 @@ model.ode = @hbv_rxs;
 model.lsq = @(t, y, p) {p.wa*(y.ca-y.ma), p.wb*(y.cb-y.mb), p.wc*(y.cc-y.mc)};
 
 %% Set the reaction rate constant vector kr; use log transformation
-kr_ac = [2; 0.025; 1000; 0.25; 1.9985; 7.5E-6];
-logkr = log10(kr_ac);
-p.k = logkr;
+krac = [2; 0.025; 1000; 0.25; 1.9985; 7.5E-6];
+thetaac = log10(krac);
+
+for i = 1:numel(thetaac)
+  p.(['k' num2str(i)]) = thetaac(i);
+endfor
 
 %% output times
 tfinal = 100;
@@ -53,7 +63,7 @@ model.tout = tdata;
 %% measurement weights
 mweight = sqrt([1; 1e-2; 1e-4]);
 p.wa = mweight(1); p.wb = mweight(2); p.wc = mweight(3);
-p_ac = [logkr; mweight];
+p_ac = [thetaac; mweight];
 
 pe = paresto(model);
 
@@ -70,6 +80,7 @@ noise = sqrt(R)*randn(size(y_ac));
 y_noisy = y_ac .* (1 + noise);
 y_noisy = max(y_noisy, 0);
 
+
 %% initial guess for rate constants, page 544, edition 2.2.
 logkrinit = [0.80, -1.13, 3.15, -0.77, -0.16, -5.46]';
 p_init = [logkrinit; mweight];
@@ -77,38 +88,53 @@ p_init = [logkrinit; mweight];
 y_init = pe.simulate(zeros(3, 1), x0_ac, p_init);
 
 
-%% list of all parameters
-p.k = logkrinit;
-theta0 = p;
-%% initial guess = actual params
-%%theta0.k = logkr;
+%% initialize all parameters
+%% index of estimated rate constants
+ind = [1, 2, 3, 4, 5, 6];
 
+%%del = 1;
+del = 0.1;
+
+theta0 = p;
+for i = 1:numel(ind)
+  theta0.(['k' num2str(ind(i))]) = logkrinit(i);
+endfor
 theta0.ca = x0_ac(1);
 theta0.cb = x0_ac(2);
 theta0.cc = x0_ac(3);
 
-%% bounds  on parameters
-est_ind = 1:6;
-loose = 5.5;
-lb = struct();
-lb.k = -loose*ones(numel(theta0.k),1);
-lb.wa = theta0.wa; lb.wb = theta0.wb; lb.wc = theta0.wc;
+lb = theta0;
+ub = theta0;
+%% loosen bounds bounds on estimated parameters
 
-ub = struct();
-ub.k = loose*ones(numel(theta0.k),1);
-ub.wa = theta0.wa; ub.wb = theta0.wb; ub.wc = theta0.wc;
+del = 1;
+
+for i = 1: numel(ind)
+  name = ['k' num2str(ind(i))];
+  lb.(name) = lb.(name) - del;
+  ub.(name) = ub.(name) + del;
+endfor
 
 [est, y, p] = pe.optimize(y_noisy, theta0, lb, ub);
 
-theta_conf = pe.confidence(est, est_ind, 0.95);
+conf = pe.confidence(est, 0.95);
 
-disp('Optimal parameters and confidence intervals')
-[est.theta(est_ind), theta_conf]
+disp('Initial guess')
+disp(theta0)
+
+disp('Optimal parameters')
+disp(est.theta)
+
+disp('Confidence intervals')
+disp(conf.bbox)
+
+disp('True parameters')
+disp(thetaac)
 
 %% check eigenvalues/eigenvectors for badly determined parameter
 %% directions
 
-[u, lam] = eig(est.d2f_dtheta2(est_ind,est_ind));
+[u, lam] = eig(conf.H);
 
 %%
 %%  watch out, eigenvalues may be unordered; 
@@ -117,10 +143,7 @@ disp('Optimal parameters and confidence intervals')
 %%  sign on u(:,i(1)) should give the same fit to the data
 
 [s,i] = sort(diag(lam));
-logkrp = est.theta(est_ind) + 0.5*u(:,i(1));
-
-%% try text, page 545, edition 2.2
-%logkrp = [0.32; -1.47; 4.21; -0.46; 1.56; -5.08];
+logkrp = cell2mat(struct2cell(est.theta)) + 0.5*u(:,i(1));
 
 %% simulate with parameters perturbed in weak direction
 pp = [logkrp; mweight];

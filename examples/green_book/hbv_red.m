@@ -24,23 +24,25 @@
 more off
 
 model=struct;
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.transcription = 'shooting';
+model.print_level = 1;
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 model.nlp_solver_options.ipopt.print_level = 5;
 
 model.x = {'ca', 'cb', 'cc'};
-model.p = {'k', 'wa', 'wb', 'wc'};
+model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'wa', 'wb', 'wc'};
 model.d = {'ma', 'mb', 'mc'};
 
 % Non-scalar dimensions
-model.dim.k = 6;
+%model.dim.k = 6;
 
 function rhs = hbv_rxs(t, y, p)
-  kr = [ 10.^(p.k(1)) + p.k(4), ...
-	 10.^(p.k(2)) * p.k(4), ...
-	 p.k(3), ...
-	 p.k(4), ...
-	 p.k(3) / 10.^p.k(5), ...
-	 10.^p.k(6) ];
+  kr = [ 10.^(p.k1) + p.k4, ...
+	 10.^(p.k2) * p.k4, ...
+	 p.k3, ...
+	 p.k4, ...
+	 p.k3 / 10.^p.k5, ...
+	 10.^p.k6 ];
   rhs = {kr(2)*y.cb - kr(4)*y.ca, ...
          kr(1)*y.ca - kr(2)*y.cb - kr(6)*y.cb*y.cc, ...
          kr(3)*y.ca - kr(5)*y.cc - kr(6)*y.cb*y.cc};
@@ -57,7 +59,9 @@ thetaac = [log10(krac(1)-krac(4)); ...
 	   krac(4); ...
 	   log10(krac(3)/krac(5));
            log10(krac(6))];
-p.k = thetaac;
+for i = 1:numel(thetaac)
+  p.(['k' num2str(i)]) = thetaac(i);
+endfor
 
 %% output times
 tfinal = 100;
@@ -67,7 +71,9 @@ model.tout = tdata;
 
 %% measurement weights
 mweight = sqrt([1; 1e-2; 1e-4]);
-p.wa = mweight(1); p.wb = mweight(2); p.wc = mweight(3);
+p.wa = mweight(1);
+p.wb = mweight(2);
+p.wc = mweight(3);
 p_ac = [thetaac; mweight];
 
 pe = paresto(model);
@@ -86,33 +92,45 @@ y_noisy = y_ac .* (1 + noise);
 y_noisy = max(y_noisy, 0);
 
 %% initialize all parameters
-%% index of estimated parameters
+%% index of estimated rate constants
 ind = [1, 2, 5, 6];
 del = 1;
 
 theta0 = p;
-theta0.k(ind) = theta0.k(ind) + 0.75*del;
+for i = 1:numel(ind)
+  name = ['k' num2str(ind(i))]
+  theta0.(name) = theta0.(name) + 0.75*del;
+endfor
+
 theta0.ca = x0_ac(1);
 theta0.cb = x0_ac(2);
 theta0.cc = x0_ac(3);
 
+lb = theta0;
+ub = theta0;
 %% loosen bounds bounds on estimated parameters
-lb = struct();
-lb.k = theta0.k;
-lb.k(ind) = lb.k(ind) - del;
-lb.wa = theta0.wa; lb.wb = theta0.wb; lb.wc = theta0.wc;
 
-ub = struct();
-ub.k = theta0.k;
-ub.k(ind) = ub.k(ind) + del;
-ub.wa = theta0.wa; ub.wb = theta0.wb; ub.wc = theta0.wc;
+for i = 1: numel(ind)
+  name = ['k' num2str(ind(i))];
+  lb.(name) = lb.(name) - del;
+  ub.(name) = ub.(name) + del;
+endfor
 
 [est, y, p] = pe.optimize(y_noisy, theta0, lb, ub);
 
-theta_conf = pe.confidence(est, ind, 0.95);
+conf = pe.confidence(est, 0.95);
 
-disp('Initial guess, optimal parameters, confidence intervals, true parameters')
-[theta0.k(ind), est.theta(ind), theta_conf, thetaac(ind)]
+disp('Initial guess')
+disp(theta0)
+
+disp('Optimal parameters')
+disp(est.theta)
+
+disp('Confidence intervals')
+disp(conf.bbox)
+
+disp('True parameters')
+disp(thetaac(ind))
 
 %% optimal fit
 subplot(3,1,1)

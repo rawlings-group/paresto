@@ -3,12 +3,14 @@
 %% Estimate parameters for the A->B->C model using paresto.m
 %% jbr,  4/2018
 %%
+%% updated to paresto.m interface, 12/2019
 
 %%Model
 model = struct;
-%%model.print_level = 1;
+model.print_level = 1;
 model.transcription = "shooting";
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
 model.x = {'ca', 'cb', 'cc'};
 model.p = {'k1', 'k2'};
 %% measurement list
@@ -88,17 +90,18 @@ ub.ca = ca0;
 ub.cb = cb0;
 ub.cc = cc0;
 
-est_ind = 1:2;
-%%est_ind = 1:5;
-
 %% estimate the parameters
 est = pe.optimize(y_noisy', thetaic, lb, ub);
 
-% Also calculate confidence intervals with 95 % confidence
-theta_conf = pe.confidence(est, est_ind, 0.95);
+% Also calculate confidence intervals with 95% confidence
 
-disp('Estimated Parameters and Bounding Box')
-[est.theta(est_ind)  theta_conf]
+conf = pe.confidence(est, 0.95);
+
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
+
 
 %%plot the model fit to the noisy measurements
 

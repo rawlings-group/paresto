@@ -52,7 +52,7 @@ p_ac = [kac; nac];
 
 small = 1e-3; 
 large  = 3;
-est_ind = 1:3;
+%est_ind = 1:3;
 
 % Initial guess, upper and lower bounds for the estimated parameters
 theta0 = struct();   
@@ -60,15 +60,15 @@ theta0.k = kac;
 theta0.n = nac;      
 theta0.ca = ca0ac;
 
-ubtheta = struct(); 
-ubtheta.k = large;	 
-ubtheta.n = large;
-ubtheta.ca = large;
+ub = struct(); 
+ub.k = large;	 
+ub.n = large;
+ub.ca = large;
 
-lbtheta = struct(); 
-lbtheta.k = small;  
-lbtheta.n = small;  
-lbtheta.ca = small;
+lb = struct(); 
+lb.k = small;  
+lb.n = small;  
+lb.ca = small;
 
 nsets = size(y_noisy,2);
 thetaest = NaN(numel(thetaac), nsets);
@@ -77,14 +77,14 @@ bbox = thetaest;
 
 for j = 1:nsets
   % Estimate parameters
-  [est, y, p] = pe.optimize(y_noisy(:,j)', theta0, lbtheta, ubtheta);
+  [est, y, p] = pe.optimize(y_noisy(:,j)', theta0, lb, ub);
   % Also calculate confidence intervals with 95 % confidence
-  theta_conf = pe.confidence(est, est_ind, 0.95);
-  disp('Estimated parameters and confidence intervals')
-  [est.theta(est_ind), theta_conf]
-  thetaest(:,j) = est.theta(est_ind);
+  conf = pe.confidence(est, 0.95);
+  disp('Estimated parameters')
+  disp(est.theta)
+  disp('Bounding box intervals')
+  disp(conf.bbox)
   caest(:,j) = y.ca;
-  bbox(:,j) = theta_conf;
 endfor
 
 table  = [model.tout, caest];

@@ -120,7 +120,7 @@ theta0.nD = 0;
 lb = theta0;
 lb.k1 = 0.5*theta0.k1;
 lb.k2 = 0.5*theta0.k2;
-% We aren't estimating cBf 
+lb.cBf = theta0.cBf;
 lb.VR = theta0.VR;
 lb.nA = 0.5*theta0.nA;
 lb.nB = theta0.nB;
@@ -131,36 +131,27 @@ lb.nD = theta0.nD;
 ub = theta0;
 ub.k1 = 1.5*theta0.k1;
 ub.k2 = 1.5*theta0.k2;
-% We aren't estimating cBf 
+ub.cBf = theta0.cBf;
 ub.VR = theta0.VR;
 ub.nA = 1.5*theta0.nA;
 ub.nB = theta0.nB;
 ub.nC = theta0.nC;
 ub.nD = theta0.nD;
 
-% Initial guess, upper and lower bounds for the estimated parameters
-%p0 = [k1; 0.9*k2; teaf];
-%lbp = [0.5*k1; 0.5*k2; teaf];
-%ubp = [1.5*k1; 1.5*k2; teaf];
-%ic0 = [VR0; 1.1*nA0; 0; 0; 0];
-%lbic = [VR0; 0.5*nA0; 0; 0; 0];
-%ubic = [VR0; 1.5*nA0; 0; 0; 0];
-%lbtheta = [lbp; lbic];
-%ubtheta = [ubp; ubic];
-%theta0 = [p0; ic0];
-
 % Estimate parameters
 more off
 
 [est,v,p] = pe.optimize([Qf'; lc_m'], theta0, lb, ub);
 
-est_ind = [1,2,3]; % index of estimated parameters
+%est_ind = [1,2,3]; % index of estimated parameters
 
 % Also calculate confidence intervals with 95 % confidence
-theta_conf = pe.confidence(est, est_ind, 0.95);
+conf = pe.confidence(est, 0.95);
 
-disp('Estimated parameters and confidence intervals')
-[est.theta(est_ind), theta_conf]
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
 
 data = struct();
 data.model = [model.tout', est.x', v.lc'];

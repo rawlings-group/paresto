@@ -65,17 +65,13 @@ model.ode = @(t, y, p) {-p.k*y.ca^p.n};
 
 model.lsq = @(t, y, p) {y.ca - y.m_ca};
 
-est_ind = 1:2;
 small = 1e-3; 
 large  = 3;
 
 pe = paresto(model);
 
-objective.parlb = [small; small];
-objective.parub = [large; large];
 % true parameters are [n; k; ca0] = [1.45; .05; 0.83]; see batch_data.m file
 
-%theta0 = [3; .1; 0.8];
 theta0 = struct;
 theta0.n = 3;
 theta0.k = 0.1;
@@ -84,29 +80,31 @@ theta0.ca = 0.8;
 lbtheta = theta0;
 lbtheta.n = small;
 lbtheta.k = small;
-lbtheta.ca = 0.79;
+lbtheta.ca = 0.75;
 
 ubtheta = theta0;
 ubtheta.n = large;
 ubtheta.k = large;
-ubtheta.ca = 0.81;
+ubtheta.ca = 0.9;
 
 % Estimate parameters
 [est, y, p] = pe.optimize(ymeas', theta0, lbtheta, ubtheta);
 
 % Also calculate confidence intervals with 95 % confidence
-theta_conf = pe.confidence(est, est_ind, 0.95);
-disp('Estimated parameters and confidence intervals')
-[est.theta(est_ind), theta_conf]
+conf = pe.confidence(est, 0.95);
 
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
 
 ca = y.ca;
 
 %%echo results
 n_linear
 k_linear
-n = est.theta(1)
-k = est.theta(2)
+n = est.theta.n
+k = est.theta.k
 
 data = [time ymeas ca_linear(:) ca(:)];
 save -ascii batch_data_solution.dat data;

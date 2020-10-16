@@ -10,9 +10,8 @@
 % Model
 model = struct;
 model.transcription = 'shooting';
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-%model.nlp_solver_options.ipopt.print_level = 0;
-%model.nlp_solver_options.print_time = false;
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
 
 model.x = {'ca', 'cb'};
 model.p = {'k', 'n', 'm'};
@@ -42,23 +41,24 @@ mac   = 1;
 p_ac = [kac; nac; mac];
 
 parts = {"a", "b", "c"};
+%parts = {"c"};
 
 for npart = 1:numel(parts)
 
-if (parts{npart} == "a")
-  %% part a, using only first experiment
-  use_first = true; use_second = false;
-elseif(parts{npart} == "b")
-  %% part b, using only second experiment
-  use_first = false; use_second = true;
-elseif (parts{npart} == "c")
-  %% part c, using both experiments
-  use_first = true; use_second = true;
-endif
+switch parts{npart}
+  case "a"
+    %% part a, using only first experiment
+    use_first = true; use_second = false;
+  case "b"
+    %% part b, using only second experiment
+    use_first = false; use_second = true;
+  case "c"
+    %% part c, using both experiments
+    use_first = true; use_second = true;
+endswitch
 
 % Number of experiments
 nsets = use_first + use_second;
-
 model.nsets = nsets;
 
 % Create a paresto instance
@@ -81,37 +81,36 @@ theta0 = struct;
 theta0.k = 1.1*kac;
 theta0.n = 1.1*nac;
 theta0.m = 1.1*mac;
-theta0.ca = NaN(1,1,nsets);
-theta0.ca(:,:,1:nsets) = x_ac(1,:);
-theta0.cb = NaN(1,1,nsets);
-theta0.cb(:,:,1:nsets) = x_ac(2,:);
+theta0.ca(1,1,1:nsets) = x_ac(1,:);
+theta0.cb(1,1,1:nsets) = x_ac(2,:);
 
-lbtheta = struct;
-lbtheta.k = 0.5*kac;
-lbtheta.n = 0.5*nac;
-lbtheta.m = 0.5*mac;
-lbtheta.ca = 0.5*theta0.ca;
-lbtheta.cb = 0.5*theta0.cb;
-ubtheta = struct;
-ubtheta.k = 1.5*kac;
-ubtheta.n = 1.5*nac;
-ubtheta.m = 1.5*mac;
-ubtheta.ca = 1.5*theta0.ca;
-ubtheta.cb = 1.5*theta0.cb;
+lb = struct;
+lb.k = 0.5*kac;
+lb.n = 0.5*nac;
+lb.m = 0.5*mac;
+lb.ca = 0.5*theta0.ca;
+lb.cb = 0.5*theta0.cb;
 
-est_ind = 1:(3+ nsets*2);
+ub = struct;
+ub.k = 1.5*kac;
+ub.n = 1.5*nac;
+ub.m = 1.5*mac;
+ub.ca = 1.5*theta0.ca;
+ub.cb = 1.5*theta0.cb;
 
 % Estimate parameters
-[est,y,p] = pe.optimize(y_noisy, theta0, lbtheta, ubtheta);
+[est,y,p] = pe.optimize(y_noisy, theta0, lb, ub);
 
 % Also calculate confidence intervals with 95 % confidence
-theta_conf = pe.confidence(est, est_ind, 0.95);
+%theta_conf = pe.confidence(est, 0.95);
+conf = pe.confidence(est);
 
-disp('Estimated parameters and confidence intervals')
-[est.theta(est_ind), theta_conf]
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
 
 % Plot optimized trajectories
-if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
 figure(npart)
 clf
 for i=1:nsets
@@ -125,7 +124,5 @@ for i=1:nsets
   xlabel('t (min)')
   ylabel('c (mol/L)')
 end
-%% TITLE
-endif %% PLOTTING
 
 endfor

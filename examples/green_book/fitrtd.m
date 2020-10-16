@@ -39,7 +39,10 @@ else
 endif
 
 model = struct;
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+% model.print_level = 1;
+model.transcription = 'shooting';
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
 model.x = {'c1', 'c2'};
 model.p = {'rho', 'alpha', 'cf', 'tau1', 'tau2'};
 model.d = {'m_c2'};
@@ -72,10 +75,8 @@ model.lsq_ind = meas_ind'; % only use index of measurement times in objective fu
 
 pe = paresto(model);
 
-est_ind = 1;
-
 par = struct();
-par.rho = 0.5
+par.rho = 0.5;
 par.alpha = 0.1;
 par.cf = 1;
 par.tau1 = 1;
@@ -89,6 +90,9 @@ lb.alpha = par.alpha;
 lb.cf = par.cf;
 lb.tau1 = par.tau1;
 lb.tau2 = par.tau2;
+%% bounds on ICs so don't estimate them
+lb.c1 = par.c1;
+lb.c2 = par.c2;
 
 ub = lb;
 ub.rho = 0.95;
@@ -97,11 +101,13 @@ ub.rho = 0.95;
 [est, y, p] = pe.optimize(y_noisy', par, lb, ub);
 
 % Also calculate confidence intervals with 95 % confidence
-theta_conf = pe.confidence(est, numel(est_ind), 0.95);
+conf = pe.confidence(est, 0.95);
 
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
 
-disp('Estimated parameters and confidence intervals')
-[est.theta(est_ind), theta_conf]
 
 c2dim = y.c2/cf;
 gnuplotsave('fitrtd.dat', struct('data', [tmeas(:), ymeas(:)], ...
@@ -114,7 +120,7 @@ endif %% PLOTTING
 
 %% Now solve for the steady-state conversion and yield with the estimated rho
 par = struct;
-par.rho = est.theta(est_ind);
+par.rho = est.theta.rho;
 par.k1 = 1;
 par.k2 = 2;
 par.caf = 1;

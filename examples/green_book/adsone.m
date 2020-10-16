@@ -79,63 +79,65 @@ cgmeas = [Hgas4];
 Ks0 = 2;
 cms0 = 40;
 cmp0 = 0;
-par0 = [Ks0; cms0; cmp0];
 
-theta0 = struct;
-theta0.Ks = Ks0;
-theta0.cms = cms0;
-theta0.cmp = cmp0;
-
-theta0.time = 0;
-
-theta0.cg = 100;
-theta0.cads = 30;
-
-thetalb = struct;
-thetalb.Ks = 1E-3;
-thetalb.cms = 10;
-thetalb.cmp = 0;
-
-%thetalb.time = 0;
-
-thetalb.cg = 0;
-thetalb.cads = 0;
-
-thetaub = struct;
-thetaub.Ks = 5;
-thetaub.cms = 200;
-thetaub.cmp = 100;
-thetaub.time = 0;
-
-est_ind = 1:3;
-
+algmodel.transcription = "shooting";
+%algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
+algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
+% set eps to zero for algebraic model
+algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
 % use a dummy differential state to measure time
+#algmodel.print_level = 1;
 algmodel.x = {'time'};
 algmodel.z = {'cg', 'cads'};
-algmodel.p = {'Ks', 'cms', 'cmp'};
+algmodel.p = {'sqKs', 'cms', 'cmp'};
 algmodel.d = {'cgmeas', 'cadsmeas'};
 
 algmodel.ode = @(t, y, p) {1};
 algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
-			   (p.cms*sqrt(p.Ks)*sqrt(y.cgmeas))/(1 + sqrt(p.Ks)*sqrt(y.cgmeas)), ...
+			   (p.cms*p.sqKs*sqrt(y.cgmeas))/(1 + p.sqKs*sqrt(y.cgmeas)), ...
 			   y.cg - y.cgmeas};
 ##algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)/10, y.cadsmeas-y.cads};
 algmodel.lsq = @(t, y, p) {y.cadsmeas-y.cads};
 algmodel.tout = 1:numel(cgmeas);
 		      
+theta0 = struct;
+theta0.sqKs = sqrt(Ks0);
+theta0.cms = cms0;
+theta0.cmp = cmp0;
+theta0.time = 1;
+theta0.cg = 100;
+theta0.cads = 30;
+
+lb = struct;
+lb.sqKs = sqrt(1E-3);
+lb.cms = 10;
+lb.cmp = 0;
+lb.time = 1;
+
+ub = struct;
+ub.sqKs = sqrt(5);
+ub.cms = 200;
+ub.cmp = 100;
+ub.time = 1;
+
 pe = paresto(algmodel);
 
-est = pe.optimize([cgmeas'; cadsmeas'], theta0, thetalb, thetaub);
-theta_opt =  est.theta(est_ind)
+est = pe.optimize([cgmeas'; cadsmeas'], theta0, lb, ub);
 
-theta_conf =  pe.confidence(est, est_ind, 0.95)
+conf =  pe.confidence(est, 0.95);
+
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
+
 
 nplot = 100;
 Xplot = linspace(0,1.05*max(cgmeas),nplot)';
-Ks = est.theta(1);
-cms = est.theta(2);
-cmx = est.theta(3);
-Yplot = cms*sqrt(Ks)*sqrt(Xplot)./(1+sqrt(Ks)*sqrt(Xplot)) + cmx;
+sqKs = est.theta.sqKs;
+cms = est.theta.cms;
+cmp = est.theta.cmp;
+Yplot = cms*sqKs*sqrt(Xplot)./(1+sqKs*sqrt(Xplot)) + cmp;
 
 table1 = [Xplot, Yplot];
 table2 = [cgmeas, cadsmeas];

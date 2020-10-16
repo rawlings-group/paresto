@@ -21,7 +21,10 @@
 % Model
 model = struct;
 model.transcription = 'shooting';
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
+% set eps to zero for algebraic model
+model.nlp_solver_options.sens_linsol_options.eps = 0;
 model.x = {'VR', 'eps2'};
 model.p = {'nA0', 'k', 'cBf', 'VR0'};       
 
@@ -114,6 +117,8 @@ theta0.eps2 = 0;
 lb = theta0;
 lb.nA0 = 0.5*theta0.nA0;
 lb.k = 0.5*theta0.k;
+lb.VR0 = theta0.VR0;
+lb.cBf = theta0.cBf;
 lb.VR = theta0.VR;
 lb.eps2 = theta0.eps2;
 
@@ -122,29 +127,30 @@ lb.eps2 = theta0.eps2;
 ub = theta0;
 ub.nA0 = 1.5*theta0.nA0;
 ub.k = 1.5*theta0.k;
+ub.VR0 = theta0.VR0;
+ub.cBf = theta0.cBf;
 ub.VR = theta0.VR;
 ub.eps2 = theta0.eps2;
 
 
 %% Estimate parameters
-more off
 
 [est, v, p] = pe.optimize([Qf'; lc_m'], theta0, lb, ub);
 
 % Also calculate confidence intervals with 95 % confidence
-est_ind = [1,2];
-theta_conf = pe.confidence(est, est_ind, 0.95);
+conf = pe.confidence(est, 0.95);
 
-disp('Estimated parameters and confidence intervals')
-[est.theta(est_ind), theta_conf]
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
 
-np = numel(est_ind);
+np = numel(est.conf_ind);
 ndata = length(tlc);
 alpha = 0.95;
 Fstat = np*finv(alpha,np,ndata-np);
 a     = 2*est.f/(ndata-np)*Fstat; 
-[xx, yy, major, minor, bbox] = ...
-   ellipse (est.d2f_dtheta2(est_ind,est_ind), a, 100, est.theta(est_ind));
+[xx, yy, major, minor, bbox] = ellipse (conf.H, a, 100, [est.theta.nA0; est.theta.k]);
 tmp = [xx, yy];
 
 table1 = [model.tout', v.lc'];
@@ -227,17 +233,16 @@ ub.VR = [theta0.VR, inf(1,N-1)];
 ub.eps2 = [theta0.eps2, inf(1,N-1)];
 
 %% Estimate parameters
-more off
 
 [estsim, v, p] = pesim.optimize([Qf'; lc_m'], theta0, lb, ub);
 
 % Also calculate confidence intervals with 95 % confidence
-thetasim_conf = pesim.confidence(estsim, est_ind, 0.95);
+confsim = pesim.confidence(estsim, 0.95);
 
-disp('Estimated parameters and confidence intervals')
-[estsim.theta(est_ind), thetasim_conf]
-
-
+disp('Estimated parameters')
+disp(estsim.theta)
+disp('Bounding box intervals')
+disp(confsim.bbox)
 
 % compute the rest of the states from the reduced model
 
@@ -250,10 +255,10 @@ nA = p.nA0 - Badded + v.eps2;
 deps2dt = v.Qf*p.cBf / (1. + p.k*(p.nA0 - Badded + v.eps2)/(Badded - 2*v.eps2));
 
 ndata = length(tlc);
-Fstat = np*finv(alpha,np,ndata-np);
+Fstat = np*finv(alpha, np, ndata-np);
 a     = 2*estsim.f/(ndata-np)*Fstat; 
 [xxex, yyex, major, minor, bboxex] = ...
-   ellipse (estsim.d2f_dtheta2(est_ind,est_ind), a, 100, estsim.theta(est_ind));
+   ellipse (confsim.H, a, 100, [estsim.theta.nA0; estsim.theta.k]);
 tmpex = [xxex, yyex];
 
 table1ex = [model.tout', v.lc'];
@@ -293,7 +298,8 @@ xlabel('time (min)')
 title('LC measurement')
 
 figure()
-plot(xx, yy, bbox(:,1), bbox(:,2), xxex, yyex, bboxex(:,1), bboxex(:,2))
+plot(xx, yy, bbox(:,1), bbox(:,2), est.theta.nA0, est.theta.k, 'x', ...
+     xxex, yyex, bboxex(:,1), bboxex(:,2), estsim.theta.nA0, estsim.theta.k, 'o')
 
 endif %% PLOTTING
 
