@@ -42,10 +42,11 @@ p_ac = [kac; nac; mac];
 
 parts = {"a", "b", "c"};
 %parts = {"c"};
+data = struct();
 
 for npart = 1:numel(parts)
-
-switch parts{npart}
+part = parts{npart};
+switch part
   case "a"
     %% part a, using only first experiment
     use_first = true; use_second = false;
@@ -124,5 +125,11 @@ for i=1:nsets
   xlabel('t (min)')
   ylabel('c (mol/L)')
 end
-
+%% save data for plotting
+npts = numel(tout);
+ord = [1,3,2];
+data.(part) = [tout; reshape(permute(y.ca,ord) , [], npts);...
+	       reshape(permute(y.cb,ord), [], npts); ...
+	       reshape(permute(y_noisy,ord), [], npts)]';
 endfor
+gnuplotsave('react2rev.dat', data)

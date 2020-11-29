@@ -535,7 +535,7 @@ classdef paresto < handle
       % Log message with timings
       if (self.print_level > 0)
         msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
-	      tic;
+	tic;
       else
         msg = @(m) fprintf('');
       end
