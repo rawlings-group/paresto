@@ -1,3 +1,4 @@
+%% [depends] react2rev_data.dat
 %%
 %%
 %% react2rev.m, solves Exercise 9.11 of the 2nd edtion
@@ -27,7 +28,7 @@ model.ode = @(t, y, p) {-p.k * y.ca^p.n * y.cb^p.m, ...
 model.lsq = @(t, y, p) {y.ca-y.m_ca, y.cb-y.m_cb};
 
 % Options
-load "react2rev_data.dat"
+load ('react2rev_data.dat');
 tout = react2rev_data(:,1)';
 nts  = numel(tout);
 ymeas = react2rev_data(:,2:5);
@@ -111,20 +112,20 @@ disp(est.theta)
 disp('Bounding box intervals')
 disp(conf.bbox)
 
+if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
 % Plot optimized trajectories
-figure(npart)
-clf
-for i=1:nsets
-  subplot(nsets,1,i)
-  plot(tout, y.ca(:,:,i));
-  hold on;
-  plot(tout, y.cb(:,:,i));
-  plot(tout, y_noisy(:,:,i), 'o');
-  legend({'c_A (estimated)', 'c_B (estimated)', 'c_A (measured)', 'c_B (measured)'})
-  title('Optimal fit')
-  xlabel('t (min)')
-  ylabel('c (mol/L)')
-end
+  figure(npart)
+  for i=1:nsets
+    subplot(nsets,1,i)
+    plot(tout, y.ca(:,:,i), tout, y.cb(:,:,i), tout, y_noisy(:,:,i), 'o');
+    legend({'c_A (estimated)', 'c_B (estimated)', 'c_A (measured)', 'c_B (measured)'})
+    title('Optimal fit')
+    xlabel('t (min)')
+    ylabel('c (mol/L)')
+  end
+  %% TITLE
+endif %% PLOTTING
+
 %% save data for plotting
 npts = numel(tout);
 ord = [1,3,2];
