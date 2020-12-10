@@ -106,10 +106,10 @@ disp(conf.bbox)
 %%plot the model fit to the noisy measurements
 
 if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
-  figure(1)
+  figure()
   plot(model.tout, est.x(nmeas,:)', tmeas, ymeas(:,nmeas), 'o');
   if (ncase != 1)
-    figure(2)
+    figure()
     plot(model.tout, est.x', tmeas, ymeas, 'o');
   endif
   %% TITLE

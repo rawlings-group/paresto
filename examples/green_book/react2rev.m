@@ -114,12 +114,12 @@ disp(conf.bbox)
 
 if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
 % Plot optimized trajectories
-  figure(npart)
+  figure()
   for i=1:nsets
     subplot(nsets,1,i)
     plot(tout, y.ca(:,:,i), tout, y.cb(:,:,i), tout, y_noisy(:,:,i), 'o');
-    legend({'c_A (estimated)', 'c_B (estimated)', 'c_A (measured)', 'c_B (measured)'})
-    title('Optimal fit')
+    legend({'c_A (estimated)', 'c_B (estimated)', 'c_A (measured)', 'c_B (measured)'});
+    title('Optimal fit');
     xlabel('t (min)')
     ylabel('c (mol/L)')
   end
