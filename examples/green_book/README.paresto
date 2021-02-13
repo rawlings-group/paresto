@@ -84,7 +84,7 @@ endfor
 
 That is *not* very friendly for the average user.
 
-3. We have parameters as a sctruct with parameter names, but
+3. We have parameters as a struct with parameter names, but
 confidence limits as a vector with numbers. Shouldn't mix these two
 conventions.
 
@@ -119,4 +119,31 @@ directory, and prints error messages for any examples that fail. After
 running this test, the proposed update to paresto.m should not break
 any calculations in the textbook listed above or its solution manual.
 
+UPDATE on TO-DO list; 2/2021
+
+3. JBR changed the return arguments in paresto's confidence function to provide
+parameter names for the bounding box confidence limits.
+
+This issue is closed.
+
+7. The algebraic models generate NaNs for some of the sensitivities. Joel is trying to debug this.
+Run adsone.m and echo back the est.dx_dtheta and est.dz_dtheta to see this bug.
+
+8. For some reason, not using the shooting method gives a warning about
+the wrong number of constraints. Here's the output in the adsone.m example.
+
+octave:74> adsone
+CasADi - 2021-02-13 09:48:26 WARNING("NLP is overconstrained: There are 69 equality constraints but only 66 variables.") [.../casadi/core/nlpsol.cpp:512]
+Estimated parameters
+  scalar structure containing the fields:
+
+    sqKs =  0.13027
+    cms =  26.166
+    cmp =  32.246
+Bounding box intervals
+  scalar structure containing the fields:
+
+    sqKs =  0.049549
+    cms =  1.5306
+    cmp =  2.5270
 
