@@ -136,7 +136,7 @@ classdef paresto < handle
 
       % Do bound projection
       self.nlp_solver_options.bound_consistency = true;
-      
+
       % Construct symbolic expressions for the dynamic model
       msg('DAE modeling');
       self.modeling();
@@ -433,7 +433,8 @@ classdef paresto < handle
               % State and algebraic variables at collocation points
               xzc = casadi.MX.sym(['xz_' num2str(k) s], (self.nx+self.nz)*self.ord);
               w{end+1} = xzc;
-              w_elim{end+1} = repmat([xk;zk], self.ord, 1);
+              xzk = [xk;zk];
+              w_elim{end+1} = repmat(xzk, self.ord, 1);
               % Evaluate collocation equations
               Fk = self.dynfun('x0', xk, 'xz', xzc, 'p', [tk;hk;p;dk]);
               g{end+1} = Fk.g;
