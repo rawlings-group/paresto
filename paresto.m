@@ -94,6 +94,13 @@ classdef paresto < handle
         self.nsets = 1;
       end
 
+      % Order of interpolating polynomials
+      if isfield(model, 'ord')
+        self.ord = model.ord;
+      else
+        self.ord = 3;
+      end
+
       % Get method
       msg('NLP transcription');
       if isfield(model, 'transcription')
@@ -142,9 +149,8 @@ classdef paresto < handle
       self.modeling();
 
       % Collocation equations
-      ord = 3; % Degree of interpolating polynomial
       msg('Collocation equations');
-      self.collocation(ord)
+      self.collocation()
 
       % NLP transcription
       self.transcribe()
@@ -197,15 +203,17 @@ classdef paresto < handle
       % Create a simulator
       self.tout = model.tout(:)'; % Force row vector.
       self.N = numel(self.tout)-1;
-      dae = struct('t', t, 'x', x, 'p', [p; d], 'z', z, 'ode', ode, 'alg', alg);
-      opts = struct('grid', self.tout, 'output_t0', true);
-      % Use CVODES for ODEs, IDAS for DAEs
-      if self.nz==0
-        plugin = 'cvodes';
-      else
-        plugin = 'idas';
+      if self.nx > 0
+        dae = struct('t', t, 'x', x, 'p', [p; d], 'z', z, 'ode', ode, 'alg', alg);
+        opts = struct('grid', self.tout, 'output_t0', true);
+        % Use CVODES for ODEs, IDAS for DAEs
+        if self.nz==0
+          plugin = 'cvodes';
+        else
+          plugin = 'idas';
+        end
+        self.simulator = casadi.integrator('simulator', plugin, dae, opts);
       end
-      self.simulator = casadi.integrator('simulator', plugin, dae, opts);
 
       % Function evaluated at each collocation point
       self.daefun = casadi.Function('daefun', {t, x, z, p, d}, {ode, alg}, ...
@@ -259,14 +267,11 @@ classdef paresto < handle
       end
     end
 
-    function collocation(self, ord)
+    function collocation(self)
       % COLLOCATION(SELF) Collocation equations needed for NLP transcription
 
-      % Degree of interpolating polynomial
-      self.ord = ord;
-
       % Get collocation coefficients
-      [self.tau_root, C, D] = paresto.coll_coeff(ord);
+      [self.tau_root, C, D] = paresto.coll_coeff(self.ord);
 
       % Parameter vector
       p = casadi.MX.sym('p', self.np);
@@ -285,7 +290,7 @@ classdef paresto < handle
       x = {};
       z = {};
       xz = {};
-      for j=1:ord
+      for j=1:self.ord
           x{j} = casadi.MX.sym(['x_' num2str(j)], self.nx);
           xz{end+1} = x{j};
           z{j} = casadi.MX.sym(['z_' num2str(j)], self.nz);
@@ -294,16 +299,16 @@ classdef paresto < handle
 
       % Expression for the end state
       xf = D(1)*x0;
-      for j=1:ord
+      for j=1:self.ord
         xf = xf + D(j+1)*x{j};
       end
 
       % Collocation equations
       g = {};
-      for j=1:ord
+      for j=1:self.ord
          % Expression for the state derivative
          xp = C(1,j+1)*x0;
-         for r=1:ord
+         for r=1:self.ord
              xp = xp + C(r+1,j+1)*x{r};
          end
          % Evaluate the DAE right-hand-side
@@ -327,15 +332,15 @@ classdef paresto < handle
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
           % Rootfinding solver
-	  % rf = casadi.rootfinder('rf', 'newton', rfp);
-	  % Suggestion to better handle bad initial guess; Joris Gillis, 9/4/2020
+	        % rf = casadi.rootfinder('rf', 'newton', rfp);
+	        % Suggestion to better handle bad initial guess; Joris Gillis, 9/4/2020
           rf = casadi.rootfinder('rf', 'newton', rfp,struct('error_on_fail',false,'line_search',false));
-	  % Function that evaluates state at end time
+	        % Function that evaluates state at end time
           xf_fun = casadi.Function('xf_fun', {xz}, {xf}, {'xz'}, {'xf'});
           % Initial algebraic state
           z0 = casadi.MX.sym('z0', self.nz);
           % Solution to the rootfinding problem
-          rfsol = rf('x0', [repmat([x0;z0], ord, 1)], 'p', [x0;t;h;p;d]);
+          rfsol = rf('x0', [repmat([x0;z0], self.ord, 1)], 'p', [x0;t;h;p;d]);
           xfsol = xf_fun(rfsol.x);
           % Wrap rootfinder in an object with integrator syntax
           self.dynfun = casadi.Function('dynfun', {x0, z0, [t;h;p;d]}, {xfsol}, ...
@@ -566,7 +571,10 @@ classdef paresto < handle
 
       % Solve the NLP
       msg('Solving NLP');
-      sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
+      x0 = sol.x;
+      lam_g0 = sol.lam_g;
+      lam_x0 = sol.lam_x;
+      sol = self.solver('x0', x0, 'lam_x0', lam_x0, 'lam_g0', lam_g0,...
                         'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
 
       % Return structure
