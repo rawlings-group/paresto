@@ -3,6 +3,7 @@ estimation examples and exercises in the text,
 "Chemical Reactor Analysis and Design Fundamentals," by
 J.B. Rawlings and J.G. Ekerdt, Nob Hill Publishing. 
 
+12 files total
 
 Chapter 9.
 
@@ -119,17 +120,17 @@ directory, and prints error messages for any examples that fail. After
 running this test, the proposed update to paresto.m should not break
 any calculations in the textbook listed above or its solution manual.
 
-UPDATE on TO-DO list; 2/2021
-
 3. JBR changed the return arguments in paresto's confidence function to provide
 parameter names for the bounding box confidence limits.
 
 This issue is closed.
 
+UPDATE on TO-DO list; 2/2021
+
 7. The algebraic models generate NaNs for some of the sensitivities. Joel is trying to debug this.
 Run adsone.m and echo back the est.dx_dtheta and est.dz_dtheta to see this bug.
 
-8. For some reason, not using the shooting method gives a warning about
+8. For some reason, *not* using the shooting method gives a warning about
 the wrong number of constraints. Here's the output in the adsone.m example.
 
 octave:74> adsone
@@ -147,3 +148,20 @@ Bounding box intervals
     cms =  1.5306
     cmp =  2.5270
 
+
+For others, paresto fails outright. Here's react2rev.m without shooting,
+octave:1> react2rev
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+error: casadiMEX: .../casadi/core/function_internal.hpp:1229: Evaluation failed
+error: called from
+    call at line 942 column 30
+    paren at line 1766 column 13
+    subsref at line 1751 column 31
+    optimize at line 633 column 14
+    react2rev at line 104 column 11

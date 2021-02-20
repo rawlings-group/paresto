@@ -86,19 +86,23 @@ algmodel.transcription = 'shooting';
 algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
 algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
+algmodel.print_level = 1;
 % use a dummy differential state to measure time
-#algmodel.print_level = 1;
 %algmodel.x = {'time'};
 algmodel.z = {'cg', 'cads'};
 algmodel.p = {'sqKs', 'cms', 'cmp'};
 algmodel.d = {'cgmeas', 'cadsmeas'};
 
 %algmodel.ode = @(t, y, p) {1};
+%% least squares
 algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
-			   (p.cms*p.sqKs*sqrt(y.cgmeas))/(1 + p.sqKs*sqrt(y.cgmeas)), ...
-			   y.cg - y.cgmeas};
-##algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)/10, y.cadsmeas-y.cads};
+ 			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg)), ...
+ 			   y.cg - y.cgmeas};
 algmodel.lsq = @(t, y, p) {y.cadsmeas-y.cads};
+%% error in variables, both cg and cads have error
+## algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
+##   			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg))}
+## algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)*10, y.cadsmeas-y.cads};
 algmodel.tout = 1:numel(cgmeas);
 
 theta0 = struct;
