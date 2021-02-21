@@ -6,7 +6,7 @@
 
 
 daemodel = struct;
-%daemodel.transcription = 'shooting';
+daemodel.transcription = 'shooting';
 %daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for daeebraic model
@@ -25,7 +25,7 @@ daemodel.tout = tplot;
 
 daemodel.ode = @(t, y, p) {-p.k*y.z};
 daemodel.alg = @(t, y, p) {y.z - y.x};
-daemodel.lsq = @(t, y, p) {y.xmeas - y.z};
+daemodel.lsq = @(t, y, p) {y.xmeas - y.x};
 
 %% create measurements
 x0 = 1;
@@ -68,7 +68,7 @@ ysim = pe.simulate(0, x0, pp, z0);
 
 %% estimate the parameters
 
-est = pe.optimize(meas, theta0, lb, ub);
+est = pe.optimize([meas], theta0, lb, ub);
 
 conf =  pe.confidence(est, 0.95);
 
