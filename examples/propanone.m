@@ -188,7 +188,7 @@ title('Reactive intermediates');
 legend('X','Y','Z');
 
 myfile = fopen('propanone_data.dat', 'w');
-for i = 1: size(tplot)
+for i = 1:numel(tplot)
   fprintf(myfile, '%8.3f', tplot(i), ymeas(i,:));
   fprintf(myfile, '\n');
 end
