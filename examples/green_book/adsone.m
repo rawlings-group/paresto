@@ -87,13 +87,10 @@ algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
 algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
 algmodel.print_level = 1;
-% use a dummy differential state to measure time
-%algmodel.x = {'time'};
 algmodel.z = {'cg', 'cads'};
 algmodel.p = {'sqKs', 'cms', 'cmp'};
 algmodel.d = {'cgmeas', 'cadsmeas'};
 
-%algmodel.ode = @(t, y, p) {1};
 %% least squares
 algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
  			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg)), ...
@@ -109,7 +106,6 @@ theta0 = struct;
 theta0.sqKs = sqrt(Ks0);
 theta0.cms = cms0;
 theta0.cmp = cmp0;
-%theta0.time = 1;
 theta0.cg = 100;
 theta0.cads = 30;
 
@@ -117,13 +113,11 @@ lb = struct;
 lb.sqKs = sqrt(1E-3);
 lb.cms = 10;
 lb.cmp = 0;
-%lb.time = 1;
 
 ub = struct;
 ub.sqKs = sqrt(5);
 ub.cms = 200;
 ub.cmp = 100;
-%ub.time = 1;
 
 pe = paresto(algmodel);
 
