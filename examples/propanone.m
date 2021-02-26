@@ -5,9 +5,9 @@
 
 
 %% load casadi and paresto
-## addpath('~/src/casadi/casadi-octave')
-## addpath ("~/src/paresto");
-## pkg ('load',  'statistics');
+addpath('~/src/casadi/casadi-octave')
+addpath ("~/src/paresto");
+pkg ('load',  'statistics');
 
 % Create suitable data such that:
 % Major: A,B,C,D,H
@@ -199,8 +199,11 @@ fclose(myfile);
 model = struct();
 model.print_level = 1;
 model.transcription = 'shooting';
-%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-model.nlp_solver_options.ipopt.mumps_scaling = 0;
+## model.transcription = 'simultaneous';
+## model.ord = 1;
+
+model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+%model.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
 algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
 %% variable list: differential and algebraic states, parameters, and
@@ -236,7 +239,7 @@ endfunction
 model.ode = @ode_part;
 model.alg = @alg_part;
 model.lsq = @(t, x, p) {x.mA-x.A, x.mB-x.B, x.mC-x.C, x.mD-x.D, x.mE-x.E, ...
-  			x.mF-x.F, x.mG-x.G, x.mH-x.H, 1e-7*x.X, 1e-7*x.Y, 1e-7*x.Z};
+  			x.mF-x.F, x.mG-x.G, x.mH-x.H, 1e-10*x.X, 1e-10*x.Y, 1e-10*x.Z};
 ## model.lsq = @(t, x, p) {x.mA-x.A, x.mB-x.B, x.mC-x.C, x.mD-x.D, x.mE-x.E, ...
 ##   			x.mF-x.F, x.mG-x.G, x.mH-x.H};
 model.tout = tplot;
