@@ -63,9 +63,8 @@ pe = paresto(model);
 %% initialize state and parameters
 
 x0 = ca0;
-thetaac = k;
 
-y_ac = pe.simulate(0, x0, thetaac);
+y_ac = pe.simulate(0, x0, k);
 
 theta0 = struct();
 theta0.k = k;

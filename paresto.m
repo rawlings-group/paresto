@@ -232,11 +232,21 @@ classdef paresto < handle
                                     {'p'}, fieldnames(pp));
     end
 
-    function [x, z] = simulate(self, d, x0, p, z0)
+    function [x, z] = simulate(self, d, x0, pin, z0)
       % [X, Z] = SIMULATE(SELF, D, X0, P, Z0)
       % Number of experiments
       nsets = size(x0, 2);
 
+      %% allow struct for parameters; convert to column vector
+      if (isstruct(pin))
+	fn = fieldnames(pin);
+	for i = 1:numel(fn)
+	  p(i) = pin.(fn{i});
+	end%for
+	p = p(:);
+      else
+	p = pin;
+      end%if
       % Check dimensions
       assert(size(x0, 1)==self.nx)
       assert(size(p, 1)==self.np)

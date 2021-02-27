@@ -63,7 +63,6 @@ model.tout = tdata;
 %% measurement weights
 mweight = sqrt([1; 1e-2; 1e-4]);
 p.wa = mweight(1); p.wb = mweight(2); p.wc = mweight(3);
-p_ac = [thetaac; mweight];
 
 pe = paresto(model);
 
@@ -71,7 +70,7 @@ pe = paresto(model);
 small = 0;
 x0_ac  = [1; small; small];
 
-y_ac = pe.simulate(zeros(3, 1), x0_ac, p_ac);
+y_ac = pe.simulate(zeros(3, 1), x0_ac, p);
 
 randn('seed',1);
 R = diag([0.1 0.1 0.1])^2;

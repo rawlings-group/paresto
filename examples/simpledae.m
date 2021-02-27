@@ -2,17 +2,20 @@
 %% jbr,  2/20/21
 %%
 %  simple dae to debug NaNs in sensitivities
+%  model:       dx/dt = -k z;  z = x; x(0)=x_0;
+%  measurement: x(t).
 %
 
-
 daemodel = struct;
-daemodel.transcription = 'shooting';
+daemodel.transcription = 'simultaneous';
+daemodel.ord = 1;
+%daemodel.transcription = 'shooting';
 %daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
-daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
+%daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for daeebraic model
 daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
 daemodel.print_level = 1;
-% use a dummy differential state to measure time
+%
 daemodel.x = {'x'};
 daemodel.z = {'z'};
 %daemodel.p = {'k', 'b'};
@@ -24,6 +27,7 @@ tplot = linspace(0,1,3);
 daemodel.tout = tplot;
 
 daemodel.ode = @(t, y, p) {-p.k*y.z};
+%daemodel.alg = @(t, y, p) {y.z - p.b*y.x};
 daemodel.alg = @(t, y, p) {y.z - y.x};
 daemodel.lsq = @(t, y, p) {y.xmeas - y.x};
 
@@ -35,8 +39,8 @@ z0 = b*x0;
 randn('seed', 0);
 meas = x0*exp(-k*tplot) + 0.1*randn(size(tplot));
 
-p.k = 1;
-%p.b = 2;
+p.k = k;
+%p.b = b;
 
 %% set up parameter initial guesses and bounds
 theta0 = struct;
@@ -47,7 +51,7 @@ theta0.z = z0;
 
 lb = struct;
 lb.k = sqrt(1E-3);
-%lb.b = 10;
+%lb.b = 0;
 lb.x = 0;
 lb.z = 0;
 
@@ -61,14 +65,11 @@ pe = paresto(daemodel);
 
 
 %% check model
-%% need a vector of parameters for simulate function
-%pp = [p.k; p.b];
-pp = [p.k];
-ysim = pe.simulate(0, x0, pp, z0);
+ysim = pe.simulate(0, x0, p, z0);
 
 %% estimate the parameters
 
-est = pe.optimize([meas], theta0, lb, ub);
+est = pe.optimize(meas, theta0, lb, ub);
 
 conf =  pe.confidence(est, 0.95);
 
@@ -76,4 +77,10 @@ disp('Estimated parameters')
 disp(est.theta)
 disp('Bounding box intervals')
 disp(conf.bbox)
+
+
+
+
+
+
 
