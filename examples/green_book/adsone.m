@@ -81,6 +81,8 @@ cms0 = 40;
 cmp0 = 0;
 
 algmodel = struct;
+## daemodel.transcription = 'simultaneous';
+## daemodel.ord = 1;
 algmodel.transcription = 'shooting';
 %algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;

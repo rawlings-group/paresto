@@ -165,3 +165,33 @@ error: called from
     subsref at line 1751 column 31
     optimize at line 633 column 14
     react2rev at line 104 column 11
+
+UPDATE on TO-DO list; 2/27/2021
+
+8. Joel fixed the algebraic problem so that adsone.m does not give overconstrained warning above.
+But now it gives Inf/NaN in EIG.  Use these settings to see this error
+
+daemodel.transcription = 'simultaneous';
+daemodel.ord = 1;
+
+
+EXIT: Optimal Solution Found.
+      solver  :   t_proc      (avg)   t_wall      (avg)    n_eval
+       nlp_f  |   4.00us (  4.00us)   4.33us (  4.33us)         1
+       nlp_g  |  13.00us ( 13.00us)  13.36us ( 13.36us)         1
+    nlp_grad  |  59.00us ( 59.00us)  59.46us ( 59.46us)         1
+  nlp_grad_f  |  21.00us ( 10.50us)  20.88us ( 10.44us)         2
+   nlp_jac_g  | 132.00us ( 66.00us) 132.63us ( 66.31us)         2
+       total  |   1.03ms (  1.03ms)   1.02ms (  1.02ms)         1
+paresto.paresto (t=53.6699 ms): Sensitivity analysis
+fwd3_solver  :   t_proc      (avg)   t_wall      (avg)    n_eval
+      total  | 759.00us (759.00us) 758.39us (758.39us)         1
+paresto.paresto (t=63.7078 ms): Optimization complete
+error: EIG: matrix contains Inf or NaN values
+error: called from
+    confidence at line 756 column 13
+    adsone at line 128 column 6
+
+
+9.  JBR enabled the simulate function to take a struct of parameters in addition
+to a vector.  Both may be convenient for the user.
