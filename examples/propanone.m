@@ -256,7 +256,7 @@ for i = 1: numel(model.z)
 end%for
 
 %% check reduced model
-ysim = pe.simulate(zeros(8,1), x0new(1:8), p, x0new(9:11));
+[xsim, zsim] = pe.simulate(zeros(8,1), x0new(1:8), p, x0new(9:11));
 
 %% estimate the parameters
 [est, y, p] = pe.optimize(ymeas', thetaic, lb, ub);

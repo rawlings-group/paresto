@@ -7,14 +7,14 @@
 %
 
 daemodel = struct;
-%daemodel.transcription = 'simultaneous';
-%daemodel.ord = 1;
+%% daemodel.transcription = 'simultaneous';
+%% daemodel.ord = 1;
 daemodel.transcription = 'shooting';
 daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 %daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for daeebraic model
-daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
-daemodel.print_level = 1;
+%daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
+daemodel.print_level = 0;
 %
 daemodel.x = {'x'};
 daemodel.z = {'z'};
@@ -23,6 +23,10 @@ daemodel.p = {'k'};
 daemodel.d = {'xmeas'};
 tplot = linspace(0,1,3);
 
+%% get information on the multipliers
+daemodel.nlp_solver_options.print_in = true;
+daemodel.nlp_solver_options.print_out = true;
+daemodel.nlp_solver_options.sens_linsol = 'csparse';
 
 daemodel.tout = tplot;
 
@@ -31,9 +35,9 @@ daemodel.ode = @(t, y, p) {-p.k*y.z};
 daemodel.alg = @(t, y, p) {y.z - y.x};
 
 %% NaNs in est if use the following without regularization term;
-%% daemodel.lsq = @(t, y, p) {y.xmeas - y.x};
-%% No NaNs when using regularization term
-daemodel.lsq = @(t, y, p) {y.xmeas - y.x, 1e-10*y.z};
+daemodel.lsq = @(t, y, p) {y.xmeas - y.x};
+%%No NaNs when using regularization term
+%%daemodel.lsq = @(t, y, p) {y.xmeas - y.x, 1e-10*y.z};
 %% The following also works without generating NaNs
 %%daemodel.lsq = @(t, y, p) {y.xmeas - y.z};
 
@@ -52,7 +56,7 @@ p.k = k;
 theta0 = struct;
 theta0.k = 2*k;
 %theta0.b = b;
-theta0.x = 0.5*x0;
+theta0.x = 1.1*x0;
 theta0.z = z0;
 
 lb = struct;
