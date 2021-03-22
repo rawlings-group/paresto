@@ -81,12 +81,12 @@ cms0 = 40;
 cmp0 = 0;
 
 algmodel = struct;
-## daemodel.transcription = 'simultaneous';
-## daemodel.ord = 1;
+%% daemodel.transcription = 'simultaneous';
+%% daemodel.ord = 1;
 algmodel.transcription = 'shooting';
-%algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
+algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
-% set eps to zero for algebraic model
+%% set eps to zero for algebraic model
 algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
 algmodel.print_level = 1;
 algmodel.z = {'cg', 'cads'};
@@ -95,13 +95,14 @@ algmodel.d = {'cgmeas', 'cadsmeas'};
 
 %% least squares
 algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
- 			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg)), ...
- 			   y.cg - y.cgmeas};
+			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg)), ...
+			   y.cg - y.cgmeas};
 algmodel.lsq = @(t, y, p) {y.cadsmeas-y.cads};
 %% error in variables, both cg and cads have error
-## algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
-##   			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg))}
-## algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)*10, y.cadsmeas-y.cads};
+%% algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
+%%    			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg))};
+%% algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)*10, (y.cadsmeas-y.cads)};
+
 algmodel.tout = 1:numel(cgmeas);
 
 theta0 = struct;

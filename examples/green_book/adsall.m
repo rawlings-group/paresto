@@ -105,17 +105,14 @@ algmodel.transcription = "shooting";
 algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
 algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
-% use a dummy differential state to measure time
-algmodel.x = {'time'};
+
 algmodel.z = {'cg', 'cads'};
 algmodel.p = {'sqKs', 'cms', 'cmp'};
 algmodel.d = {'cgmeas', 'cadsmeas'};
 
-algmodel.ode = @(t, y, p) {1};
 algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
-			   (p.cms*p.sqKs*sqrt(y.cgmeas))/(1 + p.sqKs*sqrt(y.cgmeas)), ...
+			   (p.cms*p.sqKs*sqrt(y.cgmeas))/(1 + p.sqKs*sqrt(y.cg)), ...
 			   y.cg - y.cgmeas};
-##algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)/10, y.cadsmeas-y.cads};
 algmodel.lsq = @(t, y, p) {y.cadsmeas-y.cads};
 algmodel.tout = 1:numel(cgmeas);
 		      
