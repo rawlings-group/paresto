@@ -15,20 +15,17 @@
 %% converted to use parest, jbr, 4/24/2007
 %% converted to use paresto (casadi), jbr, 4/13/2018
 %% updated to paresto structs for parameters, jbr, 5/24/2019
-% updated to revised paresto, jbr, 6/7/2020
+%% updated to revised paresto, jbr, 6/7/2020
+%% pass constants with anonymous functions, not as parameters, jbr, 4/3/2021
 
 
 model=struct();
-%model.print_level = 1;
-%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-model.nlp_solver_options.ipopt.mumps_scaling = 0;
-%model.nlp_solver_options.ipopt.print_level = 0;
-%model.nlp_solver_options.print_time = false;
-%model.nlp_solver_options.ipopt.max_iter = 4000;
+model.print_level = 0;
+model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 model.transcription = 'shooting';
 
 model.x = {'ca', 'cb', 'cc'};
-model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'wa', 'wb', 'wc'};
+model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6'};
 model.d = {'ma', 'mb', 'mc'};
 
 function rhs = hbv_rxs(t, y, p)
@@ -44,14 +41,24 @@ function rhs = hbv_rxs(t, y, p)
 end%function
 
 model.ode = @hbv_rxs;
-model.lsq = @(t, y, p) {p.wa*(y.ca-y.ma), p.wb*(y.cb-y.mb), p.wc*(y.cc-y.mc)};
+
+%% measurement weights
+mweight = sqrt([1; 1e-2; 1e-4]);
+w.a = mweight(1); w.b = mweight(2); w.c = mweight(3);
+
+function retval = lsq_weighted(t, y, p, w)
+  retval = {w.a*(y.ca-y.ma), w.b*(y.cb-y.mb), w.c*(y.cc-y.mc)};
+endfunction
+
+model.lsq = @(t, y, p) lsq_weighted(t, y, p, w);
 
 %% Set the reaction rate constant vector kr; use log transformation
 krac = [2; 0.025; 1000; 0.25; 1.9985; 7.5E-6];
 thetaac = log10(krac);
 
-for i = 1:numel(thetaac)
-  p.(['k' num2str(i)]) = thetaac(i);
+for i = 1:numel(model.p)
+  fn = model.p{i};
+  p.(fn) = thetaac(i);
 endfor
 
 %% output times
@@ -59,10 +66,6 @@ tfinal = 100;
 ndata = 51;
 tdata = linspace(0, tfinal, ndata)';
 model.tout = tdata;
-
-%% measurement weights
-mweight = sqrt([1; 1e-2; 1e-4]);
-p.wa = mweight(1); p.wb = mweight(2); p.wc = mweight(3);
 
 pe = paresto(model);
 
@@ -79,39 +82,29 @@ noise = sqrt(R)*randn(size(y_ac));
 y_noisy = y_ac .* (1 + noise);
 y_noisy = max(y_noisy, 0);
 
-
 %% initial guess for rate constants, page 544, edition 2.2.
 logkrinit = [0.80, -1.13, 3.15, -0.77, -0.16, -5.46]';
-p_init = [logkrinit; mweight];
+p_init = [logkrinit];
 %% outputs for the initial guess
 y_init = pe.simulate(zeros(3, 1), x0_ac, p_init);
 
-
 %% initialize all parameters
 %% index of estimated rate constants
-ind = [1, 2, 3, 4, 5, 6];
-
-%%del = 1;
-del = 0.1;
-
-theta0 = p;
-for i = 1:numel(ind)
-  theta0.(['k' num2str(ind(i))]) = logkrinit(i);
-endfor
-theta0.ca = x0_ac(1);
-theta0.cb = x0_ac(2);
-theta0.cc = x0_ac(3);
-
-lb = theta0;
-ub = theta0;
-%% loosen bounds bounds on estimated parameters
 
 del = 1;
 
-for i = 1: numel(ind)
-  name = ['k' num2str(ind(i))];
-  lb.(name) = lb.(name) - del;
-  ub.(name) = ub.(name) + del;
+%% Bounds for estimated parameters
+for i = 1:numel(model.p)
+  fn = model.p{i};
+  theta0.(fn) = logkrinit(i);
+  lb.(fn) = theta0.(fn) - del;
+  ub.(fn) = theta0.(fn) + del;
+endfor
+for i = 1:numel(model.x)
+  fn = model.x{i};
+  theta0.(fn) = x0_ac(i);
+  lb.(fn) = theta0.(fn);
+  ub.(fn) = theta0.(fn);
 endfor
 
 [est, y, p] = pe.optimize(y_noisy, theta0, lb, ub);
@@ -145,7 +138,7 @@ disp(thetaac)
 logkrp = cell2mat(struct2cell(est.theta)) + 0.5*u(:,i(1));
 
 %% simulate with parameters perturbed in weak direction
-pp = [logkrp; mweight];
+pp = [logkrp];
 yp = pe.simulate(zeros(3,1), x0_ac, pp);
 
 store1 = [model.tout,  [y.ca;y.cb;y.cc]', y_init', yp'];

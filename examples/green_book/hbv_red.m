@@ -19,18 +19,17 @@
 %% converted to use paresto (casadi), jbr, 4/13/2018
 %% updated to paresto structs for parameters, jbr, 6/1/2019
 %% updated to revised paresto, jbr, 6/7/2020
+%% pass constants with anonymous functions, not as parameters, jbr, 4/3/2021
 %%
-
-more off
 
 model=struct;
 model.transcription = 'shooting';
 model.print_level = 1;
-%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-model.nlp_solver_options.ipopt.print_level = 5;
+model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+%model.nlp_solver_options.ipopt.print_level = 5;
 
 model.x = {'ca', 'cb', 'cc'};
-model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'wa', 'wb', 'wc'};
+model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6'};
 model.d = {'ma', 'mb', 'mc'};
 
 % Non-scalar dimensions
@@ -49,7 +48,16 @@ function rhs = hbv_rxs(t, y, p)
 end%function
 
 model.ode = @hbv_rxs;
-model.lsq = @(t, y, p) {p.wa*(y.ca-y.ma), p.wb*(y.cb-y.mb), p.wc*(y.cc-y.mc)};
+
+%% measurement weights
+mweight = sqrt([1; 1e-2; 1e-4]);
+w.a = mweight(1); w.b = mweight(2); w.c = mweight(3);
+
+function retval = lsq_weighted(t, y, p, w)
+  retval = {w.a*(y.ca-y.ma), w.b*(y.cb-y.mb), w.c*(y.cc-y.mc)};
+endfunction
+
+model.lsq = @(t, y, p) lsq_weighted(t, y, p, w);
 
 %% Set the reaction rate constant vector kr; use log transformation
 krac = [2; 0.025; 1000; 0.25; 1.9985; 7.5E-6];
@@ -59,8 +67,10 @@ thetaac = [log10(krac(1)-krac(4)); ...
 	   krac(4); ...
 	   log10(krac(3)/krac(5));
            log10(krac(6))];
-for i = 1:numel(thetaac)
-  p.(['k' num2str(i)]) = thetaac(i);
+
+for i = 1:numel(model.p)
+  fn = model.p{i};
+  p.(fn) = thetaac(i);
 endfor
 
 %% output times
@@ -68,13 +78,6 @@ tfinal = 100;
 ndata = 51;
 tdata = linspace(0, tfinal, ndata)';
 model.tout = tdata;
-
-%% measurement weights
-mweight = sqrt([1; 1e-2; 1e-4]);
-p.wa = mweight(1);
-p.wb = mweight(2);
-p.wc = mweight(3);
-%p_ac = [thetaac; mweight];
 
 pe = paresto(model);
 
@@ -91,27 +94,22 @@ noise = sqrt(R)*randn(size(y_ac));
 y_noisy = y_ac .* (1 + noise);
 y_noisy = max(y_noisy, 0);
 
-%% initialize all parameters
-%% index of estimated rate constants
-ind = [1, 2, 5, 6];
-del = 1;
-
+%% initialize parameters and bounds
 theta0 = p;
-for i = 1:numel(ind)
-  name = ['k' num2str(ind(i))]
-  theta0.(name) = theta0.(name) + 0.75*del;
-endfor
-
 theta0.ca = x0_ac(1);
 theta0.cb = x0_ac(2);
 theta0.cc = x0_ac(3);
-
 lb = theta0;
 ub = theta0;
-%% loosen bounds bounds on estimated parameters
 
-for i = 1: numel(ind)
+%% list of parameters to estimate
+ind = [1, 2, 5, 6];
+del = 1;
+
+%% perturb initial guess and loosen bounds bounds on estimated parameters 
+for i = 1:numel(ind)
   name = ['k' num2str(ind(i))];
+  theta0.(name) = theta0.(name) + 0.75*del;
   lb.(name) = lb.(name) - del;
   ub.(name) = ub.(name) + del;
 endfor
