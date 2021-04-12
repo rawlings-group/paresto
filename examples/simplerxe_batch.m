@@ -86,8 +86,8 @@ lb.k_1 = 0;
 lb.K2 = 0;
 ## lb.A = theta0.A;
 ## lb.Y = theta0.Y;
-lb.A = theta0.A;
-lb.Y = theta0.Y;
+lb.A = 0;
+lb.Y = 0;
 
 ub = struct();
 ub.k1 = 10;
@@ -95,8 +95,8 @@ ub.k_1 = 10;
 ub.K2 = 100;
 ## ub.A = theta0.A;
 ## ub.Y = theta0.Y;
-ub.A = theta0.A;
-ub.Y = theta0.Y;
+ub.A = 10;
+ub.Y = 10;
 
 ## %% estimate the parameters
 
@@ -112,9 +112,3 @@ disp('Estimated parameters')
 disp(est.theta)
 disp('Bounding box intervals')
 disp(conf.bbox)
-
-
-
-
-
-

@@ -195,3 +195,12 @@ error: called from
 
 9.  JBR enabled the simulate function to take a struct of parameters in addition
 to a vector.  Both may be convenient for the user.
+
+4/11/2021
+
+10. JBR enabled the simulate function to take a struct for x0 and z0, the initial
+conditions for the differential and algebraic states.
+
+11. Fix the shooting method to also use Sundials rather than its current simple collocation scheme. 
+That enables much larger time steps and error control while solving the optimization problem.
+The data points can be at large sample times but the solver controls stepsize independently.

@@ -232,14 +232,12 @@ classdef paresto < handle
                                     {'p'}, fieldnames(pp));
     end
 
-    function [x, z] = simulate(self, d, x0, pin, z0)
+    function [x, z] = simulate(self, d, xin, pin, zin)
       % [X, Z] = SIMULATE(SELF, D, X0, P, Z0)
-      % Number of experiments
-      nsets = size(x0, 2);
-
-      %% allow struct for parameters; convert to column vector
+      %% Allow struct for parameters differential states, algebraic states;
+      %% convert to column vectors
       if (isstruct(pin))
-	fn = fieldnames(pin);
+	fn = self.model.p;
 	for i = 1:numel(fn)
 	  p(i) = pin.(fn{i});
 	end%for
@@ -247,7 +245,28 @@ classdef paresto < handle
       else
 	p = pin;
       end%if
-      % Check dimensions
+      if (isstruct(xin))
+	fn = self.model.x;
+	for i = 1:numel(fn)
+	  x0(i) = xin.(fn{i});
+	end%for
+	x0 = x0(:);
+      else
+	x0 = xin;
+      end%if
+      % Number of experiments
+      nsets = size(x0, 2);
+      if (isstruct(zin))
+	fn = self.model.z;
+	for i = 1:numel(fn)
+	  z0(i) = zin.(fn{i});
+	end%for
+	z0 = z0(:);
+      else
+	z0 = zin;
+      end%if
+
+      %% Check dimensions
       assert(size(x0, 1)==self.nx)
       assert(size(p, 1)==self.np)
       assert(size(p, 2)==1)
@@ -649,10 +668,14 @@ classdef paresto < handle
       % Forward sensitivity analysis
       if calc_hess
         msg('Sensitivity analysis');
-        fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
-                      'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
-                       'out_x', sol.x, 'out_lam_x', sol.lam_x, 'out_lam_g', sol.lam_g,...
-                       'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g, 'fwd_lbx', seed, 'fwd_ubx', seed);
+        %% Ensure lam_g is not exactly zero
+	sol.lam_g = full(sol.lam_g);
+	sol.lam_g(sol.lam_g == 0) = 1e-300;
+	sol.lam_g = casadi.DM(sol.lam_g);
+	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
+			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
+			    'out_x', sol.x, 'out_lam_x', sol.lam_x, 'out_lam_g', sol.lam_g,...
+			    'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g, 'fwd_lbx', seed, 'fwd_ubx', seed);
         sens = -full(fsol.fwd_lam_x);
         r.d2f_dtheta2 = sens(self.thetaind,:);
 

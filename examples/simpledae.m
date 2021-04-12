@@ -13,7 +13,7 @@ daemodel.transcription = 'shooting';
 daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 %daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for daeebraic model
-%daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
+%%daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
 daemodel.print_level = 0;
 %
 daemodel.x = {'x'};
@@ -24,13 +24,13 @@ daemodel.d = {'xmeas'};
 tplot = linspace(0,1,3);
 
 %% get information on the multipliers
-daemodel.nlp_solver_options.print_in = true;
-daemodel.nlp_solver_options.print_out = true;
+%%daemodel.nlp_solver_options.print_in = true;
+%%daemodel.nlp_solver_options.print_out = true;
 daemodel.nlp_solver_options.sens_linsol = 'csparse';
 
 daemodel.tout = tplot;
 
-daemodel.ode = @(t, y, p) {-p.k*y.z};
+daemodel.ode = @(t, y, p) {-p.k*y.x};
 %daemodel.alg = @(t, y, p) {y.z - p.b*y.x};
 daemodel.alg = @(t, y, p) {y.z - y.x};
 
@@ -62,14 +62,12 @@ theta0.z = z0;
 lb = struct;
 lb.k = sqrt(1E-3);
 %lb.b = 0;
-lb.x = 0;
-lb.z = 0;
+lb.x = theta0.x;
 
 ub = struct;
 ub.k = sqrt(5);
 %ub.b = 200;
-ub.x = 100;
-ub.z = 100;
+ub.x = theta0.x;
 
 pe = paresto(daemodel);
 

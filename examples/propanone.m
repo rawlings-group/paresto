@@ -13,8 +13,8 @@ pkg ('load',  'statistics');
 model = struct();
 model.print_level = 1;
 model.transcription = 'shooting';
-## model.transcription = 'simultaneous';
-## model.ord = 1;
+%% model.transcription = 'simultaneous';
+%% model.ord = 1;
 
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 %model.nlp_solver_options.ipopt.mumps_scaling = 0;
@@ -222,10 +222,10 @@ function res = alg_part(t, x, p)
 end%function
 model.ode = @ode_part;
 model.alg = @alg_part;
+%%model.lsq = @(t, x, p) {x.mA-x.A, x.mB-x.B, x.mC-x.C, x.mD-x.D, x.mE-x.E, ...
+%%  			x.mF-x.F, x.mG-x.G, x.mH-x.H, 1e-10*x.X, 1e-10*x.Y, 1e-10*x.Z};
 model.lsq = @(t, x, p) {x.mA-x.A, x.mB-x.B, x.mC-x.C, x.mD-x.D, x.mE-x.E, ...
-  			x.mF-x.F, x.mG-x.G, x.mH-x.H, 1e-10*x.X, 1e-10*x.Y, 1e-10*x.Z};
-## model.lsq = @(t, x, p) {x.mA-x.A, x.mB-x.B, x.mC-x.C, x.mD-x.D, x.mE-x.E, ...
-##   			x.mF-x.F, x.mG-x.G, x.mH-x.H};
+   			x.mF-x.F, x.mG-x.G, x.mH-x.H};
 model.tout = tplot;
 pe = paresto(model);
 
@@ -259,7 +259,7 @@ end%for
 [xsim, zsim] = pe.simulate(zeros(8,1), x0new(1:8), p, x0new(9:11));
 
 %% estimate the parameters
-[est, y, p] = pe.optimize(ymeas', thetaic, lb, ub);
+[est, yest, pest] = pe.optimize(ymeas', thetaic, lb, ub);
 
 % Also calculate confidence intervals with 95% confidence
 
