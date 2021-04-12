@@ -198,9 +198,22 @@ to a vector.  Both may be convenient for the user.
 
 4/11/2021
 
-10. JBR enabled the simulate function to take a struct for x0 and z0, the initial
-conditions for the differential and algebraic states.
+10. JBR enabled the simulate function to take a struct for x0 and z0, the
+initial conditions for the differential and algebraic states. Not sure this is
+going to work correclty if also having sets of experiments.
 
 11. Fix the shooting method to also use Sundials rather than its current simple collocation scheme. 
 That enables much larger time steps and error control while solving the optimization problem.
 The data points can be at large sample times but the solver controls stepsize independently.
+
+12. When using sets of experiments, allow some parameters to be specific to each
+experiment, and others to be common among all the experiments. Currently all
+parameters are commone to all experiments.
+
+13.  Can we have multiple experiments with different model types for each experiment
+(some batch, some steady state, for example), and common/specific parameters.
+
+14. Pratyush pointed out that constants (scalars, vectors, matrices, structures)
+may be passed into the user's DAE functions by anonymous funtions as in standard
+octave/matlab.  There is no need to supply special paresto options for passing
+constants.
