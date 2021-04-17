@@ -256,15 +256,6 @@ classdef paresto < handle
       end%if
       % Number of experiments
       nsets = size(x0, 2);
-      if (isstruct(zin))
-	fn = self.model.z;
-	for i = 1:numel(fn)
-	  z0(i) = zin.(fn{i});
-	end%for
-	z0 = z0(:);
-      else
-	z0 = zin;
-      end%if
 
       %% Check dimensions
       assert(size(x0, 1)==self.nx)
@@ -275,8 +266,17 @@ classdef paresto < handle
       if nargin<5
         z0 = zeros(self.nz, nsets);
       else
-        assert(size(z0, 1)==self.nz)
-        assert(size(z0, 2)==nsets)
+	if (isstruct(zin))
+	  fn = self.model.z;
+	  for i = 1:numel(fn)
+	    z0(i) = zin.(fn{i});
+	  end%for
+	  z0 = z0(:);
+	else
+	  z0 = zin;
+	end%if
+	assert(size(z0, 1)==self.nz)
+	assert(size(z0, 2)==nsets)
       end
 
       % Solution trajectories

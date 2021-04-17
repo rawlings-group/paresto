@@ -85,10 +85,3 @@ disp('Estimated parameters')
 disp(est.theta)
 disp('Bounding box intervals')
 disp(conf.bbox)
-
-
-
-
-
-
-
