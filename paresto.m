@@ -772,7 +772,7 @@ classdef paresto < handle
       % Get the subset of the reduced Hessian being estimated
       H = r.d2f_dtheta2(conf_ind, conf_ind);
       % Ensure symmetry
-      if norm(H-H.', 'inf')>1e-6
+      if norm(H-H.', 'inf')>1e-6*norm(H, 'inf')
         warning('Reduced Hessian appears nonsymmetric');
       end
       H = 0.5*(H.' + H);
