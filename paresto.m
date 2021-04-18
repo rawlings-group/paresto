@@ -833,8 +833,9 @@ classdef paresto < handle
       theta_marg = sqrt(Fstatm/(Fstat*n_est))*theta_conf;
       % Return confidence intervals by name
       for i = 1: n_est
-	conf.bbox.(r.thetafields{r.conf_ind(i)}) = theta_conf(i);
-	conf.mbox.(r.thetafields{r.conf_ind(i)}) = theta_marg(i);
+	fn = r.thetafields{r.conf_ind(i)};
+	conf.bbox.(fn) = theta_conf(i);
+	conf.mbox.(fn) = theta_marg(i);
       end
     end
 
