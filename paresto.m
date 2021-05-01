@@ -2,7 +2,8 @@ classdef paresto < handle
   properties
     % Print level (0 or missing field; no output)
     print_level
-    % Method: Direct collocation or multiple shooting
+    % Method: Simultanenous collocation, multiple shooting collocation 
+    % or multiple shooting sundials.
     transcription
     % NLP solver plugin
     nlp_solver
@@ -283,7 +284,17 @@ classdef paresto < handle
       nt = numel(self.tout);
       x = zeros(self.nx, nt, nsets);
       z = zeros(self.nz, nt, nsets);
-
+    
+    sim1step = self.dynfun('x0', x0, 'z0', z0, 'p', [0;0.1;p;d]);
+    sim1stepforward = self.dynfun.factory('sim1stepforward', ...
+                          {'x0', 'z0', 'p', 'fwd:x0',  'fwd:z0', 'fwd:p',}, ...
+                          {'fwd:xf', 'fwd:zf'});
+    x0seed = casadi.DM.ones(self.dynfun.sparsity_in('x0'));
+    z0seed = casadi.DM.ones(self.dynfun.sparsity_in('z0'));
+    pseed = casadi.DM.ones(self.dynfun.sparsity_in('p'));
+    simforward = sim1stepforward('x0', x0, 'z0', z0, 'p', [0;0.1;p;d], 'fwd_x0', x0seed, ...
+                    'fwd_z0', z0seed, 'fwd_p', pseed); 
+    
       % Simulate for each set of experiments
       for i = 1:nsets
         % Simulate the trajectory for the data set
@@ -353,11 +364,25 @@ classdef paresto < handle
       g = vertcat(g{:});
 
       switch self.transcription
-        case 'simultaneous'
+        case 'simultaneous-collocation'
           % Encapsulate equations in a function object
           self.dynfun = casadi.Function('dynfun', ...
                 {x0, [t;h;p;d], xz}, {xf, g}, {'x0', 'p', 'xz'}, {'xf', 'g'});
         case 'shooting'
+          if self.nz==0
+            plugin = 'cvodes';
+          else
+            plugin = 'idas';
+          end%if
+          tau = casadi.MX.sym('tau');
+          x = casadi.MX.sym('x', self.daefun.sparsity_in('x'));
+          z = casadi.MX.sym('z', self.daefun.sparsity_in('z'));
+          fj = self.daefun('t', t + tau*h, 'p', p,...
+                           'x', x, 'z', z, 'd', d);
+          dae = struct('x', x, 'z', z, 't', tau, 'p', [t; h; p; d], ...
+                       'ode', fj.ode*h, 'alg', fj.alg);
+          self.dynfun = casadi.integrator('dynfun', plugin, dae);
+        case 'multiple-shooting-collocation'
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
           % Rootfinding solver
@@ -463,7 +488,7 @@ classdef paresto < handle
           hk = h(k);
 
           switch self.transcription
-            case 'simultaneous'
+            case 'simultaneous-collocation'
               % State and algebraic variables at collocation points
               xzc = casadi.MX.sym(['xz_' num2str(k) s], (self.nx+self.nz)*self.ord);
               w{end+1} = xzc;
@@ -473,6 +498,8 @@ classdef paresto < handle
               Fk = self.dynfun('x0', xk, 'xz', xzc, 'p', [tk;hk;p;dk]);
               g{end+1} = Fk.g;
             case 'shooting'
+              Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
+             case 'multiple-shooting-collocation'
               % Call ODE/DAE integrator
               Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
             otherwise
