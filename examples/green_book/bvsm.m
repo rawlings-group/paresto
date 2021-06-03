@@ -27,6 +27,8 @@
 % Model
 model = struct;
 model.transcription = 'shooting';
+% Ensure that constraints are not violated during optimization.
+model.nlp_solver_options.ipopt.alpha_for_y = 'min-dual-infeas';
 model.x = {'VR', 'nA', 'nB', 'nC', 'nD'};
 model.p = {'k1', 'k2', 'cBf'};
 

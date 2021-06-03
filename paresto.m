@@ -285,16 +285,6 @@ classdef paresto < handle
       x = zeros(self.nx, nt, nsets);
       z = zeros(self.nz, nt, nsets);
     
-    sim1step = self.dynfun('x0', x0, 'z0', z0, 'p', [0;0.1;p;d]);
-    sim1stepforward = self.dynfun.factory('sim1stepforward', ...
-                          {'x0', 'z0', 'p', 'fwd:x0',  'fwd:z0', 'fwd:p',}, ...
-                          {'fwd:xf', 'fwd:zf'});
-    x0seed = casadi.DM.ones(self.dynfun.sparsity_in('x0'));
-    z0seed = casadi.DM.ones(self.dynfun.sparsity_in('z0'));
-    pseed = casadi.DM.ones(self.dynfun.sparsity_in('p'));
-    simforward = sim1stepforward('x0', x0, 'z0', z0, 'p', [0;0.1;p;d], 'fwd_x0', x0seed, ...
-                    'fwd_z0', z0seed, 'fwd_p', pseed); 
-    
       % Simulate for each set of experiments
       for i = 1:nsets
         % Simulate the trajectory for the data set
