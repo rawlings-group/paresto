@@ -26,8 +26,9 @@ model=struct;
 model.transcription = 'shooting';
 model.print_level = 1;
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-model.nlp_solver_integrator_options.abstol = 1e-6;
+model.nlp_solver_integrator_options.abstol = 1e-5;
 model.nlp_solver_integrator_options.reltol = 1e-4;
+model.nlp_solver_integrator_options.linear_multistep_method = 'adams';
 %model.nlp_solver_options.ipopt.print_level = 5;
 
 model.x = {'ca', 'cb', 'cc'};

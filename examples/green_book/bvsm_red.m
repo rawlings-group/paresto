@@ -22,6 +22,9 @@
 model = struct;
 model.transcription = 'shooting';
 %model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_integrator_options.abstol = 1e-8;
+model.nlp_solver_integrator_options.reltol = 1e-4;
+model.nlp_solver_integrator_options.linear_multistep_method = 'adams';
 model.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
 model.nlp_solver_options.sens_linsol_options.eps = 0;
