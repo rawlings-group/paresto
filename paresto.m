@@ -13,6 +13,9 @@ classdef paresto < handle
     nlp_presolver
     % NLP presolver options
     nlp_presolver_options
+    % NLP solver integrator options (only used for the shooting transcription
+    % options that uses sundials as the integrator during optimization).
+    nlp_solver_integrator_options
     % Dynamic model
     model
     % ODE/DAE simulator
@@ -136,6 +139,13 @@ classdef paresto < handle
         self.nlp_solver_options = model.nlp_solver_options;
       else
         self.nlp_solver_options = struct;
+      end
+      
+      % NLP solver integrator options.
+      if isfield(model, 'nlp_solver_integrator_options')
+        self.nlp_solver_integrator_options = model.nlp_solver_integrator_options;
+      else
+        self.nlp_solver_integrator_options = struct;
       end
 
       % Have NLP base class calculate multipliers
@@ -371,7 +381,8 @@ classdef paresto < handle
                            'x', x, 'z', z, 'd', d);
           dae = struct('x', x, 'z', z, 't', tau, 'p', [t; h; p; d], ...
                        'ode', fj.ode*h, 'alg', fj.alg);
-          self.dynfun = casadi.integrator('dynfun', plugin, dae);
+          self.dynfun = casadi.integrator('dynfun', plugin, dae, ...
+                                           self.nlp_solver_integrator_options);
         case 'multiple-shooting-collocation'
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
