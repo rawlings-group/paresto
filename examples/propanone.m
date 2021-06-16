@@ -19,6 +19,9 @@ model.transcription = 'shooting';
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 %model.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
+model.nlp_solver_integrator_options.reltol = 1e-8;
+model.nlp_solver_integrator_options.max_order = 2;
+model.nlp_solver_integrator_options.newton_scheme = 'tfqmr';
 model.nlp_solver_options.sens_linsol_options.eps = 0;
 %% variable list: differential and algebraic states, parameters, and
 %% measurements and constants
@@ -131,8 +134,8 @@ x0g(int) = xf(2,int).*[pf.k2, pf.k3, pf.k7];
 xp0g = massbal(0, x0, pf);
 fixed_x0 = [ones(8,1); zeros(3,1)];
 fixed_xp0 = zeros(size(xp0g));
-options.AbsTol = 0.01*sqrt(eps);
-options.RelTol = 0.01*sqrt(eps);
+options.AbsTol = 1e-16;
+options.RelTol = 1e-16;
 [x0new, xp0new, resnorm] = decic (@(t, x, xp) daemodel(t, x, xp, p), ...
 				  0, x0g, fixed_x0, xp0g, fixed_xp0, options);
 %% solve the DAEs
@@ -250,7 +253,7 @@ end%for
 
 for i = 1: numel(model.z)
   fnz = model.z{i};
-  thetaic.(fnz) = 1e-3;
+  thetaic.(fnz) = x0new(8+i);
   lb.(fnz) = 0;
   ub.(fnz) = 10;
 end%for
