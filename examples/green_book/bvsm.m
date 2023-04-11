@@ -29,6 +29,7 @@ model = struct;
 model.transcription = 'shooting';
 model.x = {'VR', 'nA', 'nB', 'nC', 'nD'};
 model.p = {'k1', 'k2', 'cBf'};
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
 
 % Dependent variables with definitions
 model.y = {'lc'};
