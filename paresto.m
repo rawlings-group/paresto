@@ -205,14 +205,15 @@ classdef paresto < handle
       self.N = numel(self.tout)-1;
       if self.nx > 0
         dae = struct('t', t, 'x', x, 'p', [p; d], 'z', z, 'ode', ode, 'alg', alg);
-        opts = struct('grid', self.tout, 'output_t0', true);
+	grid = self.tout;
+	t0 = grid(1);
         % Use CVODES for ODEs, IDAS for DAEs
         if self.nz==0
           plugin = 'cvodes';
         else
           plugin = 'idas';
         end
-        self.simulator = casadi.integrator('simulator', plugin, dae, opts);
+        self.simulator = casadi.integrator('simulator', plugin, dae, t0, grid);
       end
 
       % Function evaluated at each collocation point
@@ -361,11 +362,11 @@ classdef paresto < handle
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
           % Rootfinding solver
-	        % rf = casadi.rootfinder('rf', 'newton', rfp);
-	        % Suggestion to better handle bad initial guess; Joris Gillis, 9/4/2020
+	  % rf = casadi.rootfinder('rf', 'newton', rfp);
+	  % Suggestion to better handle bad initial guess; Joris Gillis, 9/4/2020
           rf = casadi.rootfinder('rf', 'newton', rfp,struct('error_on_fail',false,'line_search',false));
-	        % Function that evaluates state at end time
-          xf_fun = casadi.Function('xf_fun', {xz}, {xf}, {'xz'}, {'xf'});
+	  % Function that evaluates state at end time
+          xf_fun = casadi.Function('xf_fun', {xz}, {xf}, {'xz'}, {'xf'}, struct('allow_free', true));
           % Initial algebraic state
           z0 = casadi.MX.sym('z0', self.nz);
           % Solution to the rootfinding problem
@@ -672,10 +673,11 @@ classdef paresto < handle
 	sol.lam_g = full(sol.lam_g);
 	sol.lam_g(sol.lam_g == 0) = 1e-300;
 	sol.lam_g = casadi.DM(sol.lam_g);
-	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
-			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
+	fsol = self.fsolver('in_x0', sol.x, 'in_lam_x0', sol.lam_x, 'in_lam_g0', sol.lam_g,...
+			    'in_lbx', lbw, 'in_ubx', ubw, 'in_lbg', 0, 'in_ubg', 0, 'in_p', d,...
 			    'out_x', sol.x, 'out_lam_x', sol.lam_x, 'out_lam_g', sol.lam_g,...
-			    'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g, 'fwd_lbx', seed, 'fwd_ubx', seed);
+			    'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g,... 
+			    'fwd_lbx', seed, 'fwd_ubx', seed);
         sens = -full(fsol.fwd_lam_x);
         r.d2f_dtheta2 = sens(self.thetaind,:);
 

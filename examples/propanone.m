@@ -5,9 +5,9 @@
 
 
 %% load casadi and paresto
-addpath('~/src/casadi/casadi-octave')
-addpath ("~/src/paresto");
-pkg ('load',  'statistics');
+%% addpath('~/src/casadi/casadi-octave')
+%% addpath ("~/src/paresto");
+%% pkg ('load',  'statistics');
 
 %% parameter estimation with paresto
 model = struct();
