@@ -27,7 +27,6 @@ model.transcription = 'shooting';
 model.print_level = 1;
 %model.nlp_solver_options.ipopt.mumps_scaling = 0;
 model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-%model.nlp_solver_options.ipopt.print_level = 5;
 
 model.x = {'ca', 'cb', 'cc'};
 model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6'};
