@@ -21,7 +21,8 @@
 
 model=struct();
 model.print_level = 0;
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
 model.transcription = 'shooting';
 
 model.x = {'ca', 'cb', 'cc'};
