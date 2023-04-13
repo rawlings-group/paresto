@@ -31,7 +31,7 @@ Hads1 = [32.31, 40.02, 45.40, 48.49 ...
 
 Hgas2 = [3.755, 36.331, 189.904, ...
 	 413.881, 624.665, 817.592]';
-	
+
 Hads2 = [33.17, 40.90, 45.59, 47.72, ...
 	 48.74, 49.43]';
 
@@ -52,7 +52,7 @@ Hgas5 = [9.176, 72.065, 259.002, ...
 
 Hads5 = [39.52, 46.06, 49.92, 51.86, ...
 	 52.96, 53.88]';
-	
+
 Hgas6 = [2.962, 34.350, 176.860, 405.233, ...
 	 607.476, 799.723, 946.765]';
 
@@ -80,31 +80,35 @@ Ks0 = 2;
 cms0 = 40;
 cmp0 = 0;
 
-algmodel.transcription = "shooting";
-%algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
+algmodel = struct;
+%% daemodel.transcription = 'simultaneous';
+%% daemodel.ord = 1;
+algmodel.transcription = 'shooting';
+algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
-% set eps to zero for algebraic model
+%% set eps to zero for algebraic model
 algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
-% use a dummy differential state to measure time
-#algmodel.print_level = 1;
-algmodel.x = {'time'};
+algmodel.print_level = 1;
 algmodel.z = {'cg', 'cads'};
 algmodel.p = {'sqKs', 'cms', 'cmp'};
 algmodel.d = {'cgmeas', 'cadsmeas'};
 
-algmodel.ode = @(t, y, p) {1};
+%% least squares
 algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
-			   (p.cms*p.sqKs*sqrt(y.cgmeas))/(1 + p.sqKs*sqrt(y.cgmeas)), ...
+			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg)), ...
 			   y.cg - y.cgmeas};
-##algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)/10, y.cadsmeas-y.cads};
 algmodel.lsq = @(t, y, p) {y.cadsmeas-y.cads};
+%% error in variables, both cg and cads have error
+%% algmodel.alg = @(t, y, p) {y.cads - p.cmp - ...
+%%    			   (p.cms*p.sqKs*sqrt(y.cg))/(1 + p.sqKs*sqrt(y.cg))};
+%% algmodel.lsq = @(t, y, p) {(y.cgmeas-y.cg)*10, (y.cadsmeas-y.cads)};
+
 algmodel.tout = 1:numel(cgmeas);
-		      
+
 theta0 = struct;
 theta0.sqKs = sqrt(Ks0);
 theta0.cms = cms0;
 theta0.cmp = cmp0;
-theta0.time = 1;
 theta0.cg = 100;
 theta0.cads = 30;
 
@@ -112,13 +116,11 @@ lb = struct;
 lb.sqKs = sqrt(1E-3);
 lb.cms = 10;
 lb.cmp = 0;
-lb.time = 1;
 
 ub = struct;
 ub.sqKs = sqrt(5);
 ub.cms = 200;
 ub.cmp = 100;
-ub.time = 1;
 
 pe = paresto(algmodel);
 
@@ -147,4 +149,3 @@ if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
 plot (table1(:,1), table1(:,2), table2(:,1), table2(:,2), '+');
 %% TITLE
 endif %% PLOTTING
-
