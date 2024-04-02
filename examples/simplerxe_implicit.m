@@ -12,8 +12,8 @@ daemodel = struct;
 %daemodel.transcription = 'simultaneous';
 %daemodel.ord = 1;
 daemodel.transcription = 'shooting';
-daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
-%daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
+%% daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
+daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for daeebraic model
 daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
 daemodel.print_level = 1;
@@ -95,17 +95,17 @@ lb = struct();
 lb.k1 = 0;
 lb.k_1 = 0;
 lb.K2 = 0;
-lb.A = theta0.A;
-lb.B = theta0.B;
-lb.C = theta0.C;
+lb.A = 0.1*theta0.A;
+lb.B = 0.1*theta0.B;
+lb.C = 0.1*theta0.C;
 
 ub = struct();
 ub.k1 = 10;
 ub.k_1 = 10;
 ub.K2 = 100;
-ub.A = theta0.A;
-ub.B = theta0.B;
-ub.C = theta0.C;
+ub.A = 10*theta0.A;
+ub.B = 10*theta0.B;
+ub.C = 10*theta0.C;
 
 ## %% estimate the parameters
 

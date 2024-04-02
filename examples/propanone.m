@@ -16,8 +16,8 @@ model.transcription = 'shooting';
 %% model.transcription = 'simultaneous';
 %% model.ord = 1;
 
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
-%model.nlp_solver_options.ipopt.mumps_scaling = 0;
+%model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
 model.nlp_solver_options.sens_linsol_options.eps = 0;
 %% variable list: differential and algebraic states, parameters, and

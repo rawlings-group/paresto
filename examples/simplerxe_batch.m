@@ -12,8 +12,8 @@ daemodel = struct;
 %daemodel.transcription = 'simultaneous';
 %daemodel.ord = 1;
 daemodel.transcription = 'shooting';
-daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
-%daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
+%% daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
+daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for daeebraic model
 %daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
 daemodel.print_level = 1;

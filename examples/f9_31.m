@@ -20,10 +20,12 @@
 model = struct;
 model.transcription = 'shooting';
 model.x = {'VR', 'nA', 'nB', 'nC', 'nD'};
-model.p = {'k', 'cBf'};
+model.p = {'k1', 'k2', 'cBf'};
 
 % Non-scalar dimensions
-model.dim.k = 2;
+% model.dim.k = 2;
+% this approach is not compatible with structure names, i.e.,
+% use p.k1 and p.k2 and *not* p.k  with p.k(1) and p.k(2)
 
 % Dependent variables with definitions
 model.y = {'lc'};
@@ -34,10 +36,10 @@ model.d = {'Qf', 'lc_m'};
 
 % ODE right-hand-side
 model.ode = @(t, v, p) {v.Qf,...
-                        -p.k(1)*v.nA*v.nB/v.VR,...
-                        v.Qf*p.cBf - v.nB*(p.k(1)*v.nA + p.k(2)*v.nC)/v.VR,...
-                        v.nB*(p.k(1)*v.nA - p.k(2)*v.nC)/v.VR,...
-                        p.k(2)*v.nC*v.nB/v.VR};
+                        -p.k1*v.nA*v.nB/v.VR,...
+                        v.Qf*p.cBf - v.nB*(p.k1*v.nA + p.k2*v.nC)/v.VR,...
+                        v.nB*(p.k1*v.nA - p.k2*v.nC)/v.VR,...
+                        p.k2*v.nC*v.nB/v.VR};
 
 % Relative least squares objective function
 model.lsq = @(t, v, p) {v.lc_m/v.lc - 1};
@@ -96,7 +98,8 @@ theta0 = [p0; ic0];
 
 % Solution guesses, fixed parameters values
 sol = struct;
-sol.k = [k1; 0.9*k2];
+sol.k1 = k1;
+sol.k2 = 0.9*k2;
 sol.cBf = teaf;
 sol.VR = VR0;
 sol.nA = 1.1*nA0;
@@ -106,7 +109,8 @@ sol.nD = 0;
 
 % Lower bounds
 lb = struct;
-lb.k = [k1; 0.5*k2];
+lb.k1 = 0.5*k1;
+lb.k2 = 0.5*k2;
 lb.cBf = teaf;
 lb.VR = [VR0, -inf(1, N-1)];
 lb.nA = [0.5*nA0, -inf(1, N-1)];
@@ -116,7 +120,8 @@ lb.nD = [0, -inf(1, N-1)];
 
 % Upper bounds
 ub = struct;
-ub.k = [k1; 1.5*k2];
+ub.k1 = 1.5*k1;
+ub.k2 = 1.5*k2;
 ub.cBf = teaf;
 ub.VR = [VR0, inf(1, N-1)];
 ub.nA = [1.5*nA0, inf(1, N-1)];
@@ -126,15 +131,15 @@ ub.nD = [0, inf(1, N-1)];
 
 % Estimate parameters
 [est,v,p] = pe.optimize([Qf'; lc_m'], sol, lb, ub);
-est.theta
-est.d2f_dtheta2
 
 % Also calculate confidence intervals with 95 % confidence
-est_ind = find(lbtheta~=ubtheta); % estimate free parameters only
-theta_conf = pe.confidence(est, est_ind, 0.95)
+%est_ind = find(lbtheta~=ubtheta); % estimate free parameters only
+theta_conf = pe.confidence(est, 0.95)
 
-disp('Confidence interval')
-theta_conf
+disp('Estimated parameters')
+disp(est.theta)
+disp('Bounding box intervals')
+disp(conf.bbox)
 
 clf
 subplot(2,2,1)

@@ -84,7 +84,7 @@ algmodel = struct;
 %% daemodel.transcription = 'simultaneous';
 %% daemodel.ord = 1;
 algmodel.transcription = 'shooting';
-algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
+%% algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 %% set eps to zero for algebraic model
 algmodel.nlp_solver_options.sens_linsol_options.eps = 0;
