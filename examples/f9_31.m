@@ -134,7 +134,7 @@ ub.nD = [0, inf(1, N-1)];
 
 % Also calculate confidence intervals with 95 % confidence
 %est_ind = find(lbtheta~=ubtheta); % estimate free parameters only
-theta_conf = pe.confidence(est, 0.95)
+conf = pe.confidence(est, 0.95)
 
 disp('Estimated parameters')
 disp(est.theta)
