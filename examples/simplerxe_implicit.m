@@ -30,6 +30,7 @@ daemodel.tout = tplot;
 function retval = alg_part(t, y, p)
   r1 = (p.k1*y.A - p.k_1*y.B);
   retval = {y.Adot + r1, y.Bdot + y.Cdot - r1, p.K2*y.B - y.C};
+%  retval = {y.Adot + r1, y.Bdot + y.Cdot - r1, p.K2*y.Bdot - y.Cdot};
 end%function
 
 daemodel.ode = @(t, y, p) {y.Adot, y.Bdot, y.Cdot};
@@ -90,6 +91,11 @@ theta0.C = x0(3);
 theta0.Adot = 0;
 theta0.Bdot = 0;
 theta0.Cdot = 0;
+%% consistent initial derivatives
+%% r10 = p.k1*theta0.A - p.k_1*theta0.B;
+%% theta0.Adot = -r10
+%% theta0.Bdot = 1/(1+p.K2)*r10;
+%% theta0.Cdot = p.K2/(1+p.K2)*r10;
 
 lb = struct();
 lb.k1 = 0;
