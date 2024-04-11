@@ -46,7 +46,7 @@ end%function
 pf.k1 = 0.5;
 pf.k_1 = 0.5;
 pf.k2 = 40;
-pf.k_2 = 40;
+pf.k_2 = 20;
 pf.A0 = 1;
 pf.B0 = 0.4;
 pf.C0 = 0;
