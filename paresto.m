@@ -314,7 +314,7 @@ classdef paresto < handle
       h = casadi.MX.sym('h');
 
       % Initial state
-      x0 = casadi.MX.sym('x0', self.nx);
+      x0 = casadi.MX.sym('x_0', self.nx);
 
       % State and algebraic variable at collocation points
       x = {};
@@ -332,6 +332,7 @@ classdef paresto < handle
       for j=1:self.ord
         xf = xf + D(j+1)*x{j};
       end
+
 
       % Collocation equations
       g = {};
@@ -352,13 +353,16 @@ classdef paresto < handle
       % Concatenate variables, equations
       xz = vertcat(xz{:});
       g = vertcat(g{:});
-
       switch self.transcription
         case 'simultaneous'
           % Encapsulate equations in a function object
           self.dynfun = casadi.Function('dynfun', ...
                 {x0, [t;h;p;d], xz}, {xf, g}, {'x0', 'p', 'xz'}, {'xf', 'g'});
         case 'shooting'
+          % Initial algebraic state
+          z0 = casadi.MX.sym('z0', self.nz);
+          zf = z{self.ord}
+          xzf = [xf;zf];
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
           % Rootfinding solver
@@ -366,15 +370,13 @@ classdef paresto < handle
 	  % Suggestion to better handle bad initial guess; Joris Gillis, 9/4/2020
           rf = casadi.rootfinder('rf', 'newton', rfp,struct('error_on_fail',false,'line_search',false));
 	  % Function that evaluates state at end time
-          xf_fun = casadi.Function('xf_fun', {xz}, {xf}, {'xz'}, {'xf'}, struct('allow_free', true));
-          % Initial algebraic state
-          z0 = casadi.MX.sym('z0', self.nz);
+          xzf_fun = casadi.Function('xzf_fun', {xz}, {xzf}, {'xz'}, {'xzf'}, struct('allow_free', true));
           % Solution to the rootfinding problem
           rfsol = rf('x0', [repmat([x0;z0], self.ord, 1)], 'p', [x0;t;h;p;d]);
-          xfsol = xf_fun(rfsol.x);
+          xzfsol = xzf_fun(rfsol.x);
           % Wrap rootfinder in an object with integrator syntax
-          self.dynfun = casadi.Function('dynfun', {x0, z0, [t;h;p;d]}, {xfsol}, ...
-                      {'x0', 'z0', 'p'}, {'xf'});
+          self.dynfun = casadi.Function('dynfun', {x0, z0, [t;h;p;d]}, {xzfsol}, ...
+                      {'x0', 'z0', 'p'}, {'xzf'});
         otherwise
           error(['No such transcription: ' self.transcription]);
       end
@@ -482,16 +484,18 @@ classdef paresto < handle
 
           % New NLP variable for state at end of interval
           xk = casadi.MX.sym(['x' num2str(k) s], self.nx);
+          % New algebraic variable at the end of the interval
+          zk = casadi.MX.sym(['z' num2str(k) s], self.nz);
+          xzk = [xk;zk];
+
           tk = t(k+1);
           w{end+1} = xk;
           x{end+1} = xk;
           w_elim{end+1} = xk;
 
           % Enforce continuity
-          g{end+1} = xk-Fk.xf;
+          g{end+1} = xzk-Fk.xzf;
 
-          % New algebraic variable at the end of the interval
-          zk = casadi.MX.sym(['z' num2str(k) s], self.nz);
           w{end+1} = zk;
           z{end+1} = zk;
           w_elim{end+1} = zk;
@@ -500,7 +504,7 @@ classdef paresto < handle
           dk = casadi.MX.sym(['d' num2str(k) s], self.nd);
           d{end+1} = dk;
           sf = self.stagefun('t', tk, 'x', xk, 'z', zk, 'p', p, 'd', dk);
-          g{end+1} = sf.alg;
+          %g{end+1} = sf.alg;
           if lsq_ind(k+1)
             lsq{end+1} = sf.lsq;
           end
@@ -509,6 +513,7 @@ classdef paresto < handle
 
       % Concatenate vectors
       g = vertcat(g{:});
+      disp(size(g))
       w = vertcat(w{:});
       sens = vertcat(sens{:});
       lsq = vertcat(lsq{:});
@@ -563,7 +568,6 @@ classdef paresto < handle
       z0 = self.struct2vec(sol, 'z', self.N + 1, self.nsets, [], 1);
       lbz = self.struct2vec(lb, 'z', self.N + 1, self.nsets, -inf, 0);
       ubz = self.struct2vec(ub, 'z', self.N + 1, self.nsets, inf, 0);
-
       % Translate to initial guess and bound on w
       w0 = self.to_w(x0, z0, p0);
       lbw = self.to_w(lbx, lbz, lbp);
@@ -600,13 +604,19 @@ classdef paresto < handle
       end
 
       % Solve the NLP
-      msg('Solving NLP');
+      msg('Solving NLP'); 
       x0 = sol.x;
       lam_g0 = sol.lam_g;
       lam_x0 = sol.lam_x;
+      %disp(self.solver.get_function('nlp_g'))
       sol = self.solver('x0', x0, 'lam_x0', lam_x0, 'lam_g0', lam_g0,...
                         'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
-
+      % disp(sol.x)
+      nlp_g_function = self.solver.get_function('nlp_g');
+      % disp(class(nlp_g_function));
+      % disp(d);
+      result = nlp_g_function(sol.x,d);
+      % disp(result)
       % Return structure
       r = struct;
 
@@ -627,6 +637,7 @@ classdef paresto < handle
 
       % Get solution trajectories
       [x, z, p] = self.from_w(sol.x);
+      
       r.x = reshape(full(x), self.nx, self.N + 1, self.nsets);
       r.z = reshape(full(z), self.nz, self.N + 1, self.nsets);
       r.p = full(p);
@@ -971,14 +982,17 @@ classdef paresto < handle
     function [tau_root, C, D, B] = coll_coeff(ord)
       % [TAU_ROOT, C, D, B] = COLL_COEFF(ORD) Get collocation coefficients
 
-      % Gauss-Legendre points
+      % Gauss-Radau points
       switch ord
         case 1
-          tau_root = [0.5];
+          % tau_root = [0.5];
+          tau_root = [1.];
         case 2
-          tau_root = [0.5-sqrt(3)/6; 0.5+sqrt(3)/6];
+          % tau_root = [0.5-sqrt(3)/6; 0.5+sqrt(3)/6];
+          tau_root = [1/3; 1];
         case 3
-          tau_root = [0.5-sqrt(15)/10; 0.5; 0.5+sqrt(15)/10];
+        %   tau_root = [0.5-sqrt(15)/10; 0.5; 0.5+sqrt(15)/10];
+          tau_root = [2/5 - sqrt(6)/10; 2/5 + sqrt(6)/10; 1];
         otherwise
           error('order not supported');
        end

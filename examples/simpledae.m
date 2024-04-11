@@ -7,7 +7,7 @@
 %
 
 daemodel = struct;
-%% daemodel.transcription = 'simultaneous';
+%daemodel.transcription = 'simultaneous';
 %% daemodel.ord = 1;
 daemodel.transcription = 'shooting';
 %% daemodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
