@@ -361,7 +361,7 @@ classdef paresto < handle
         case 'shooting'
           % Initial algebraic state
           z0 = casadi.MX.sym('z0', self.nz);
-          zf = z{self.ord}
+          zf = z{self.ord};
           xzf = [xf;zf];
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
@@ -513,7 +513,7 @@ classdef paresto < handle
 
       % Concatenate vectors
       g = vertcat(g{:});
-      disp(size(g))
+      %disp(size(g))
       w = vertcat(w{:});
       sens = vertcat(sens{:});
       lsq = vertcat(lsq{:});
