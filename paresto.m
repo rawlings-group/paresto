@@ -801,15 +801,18 @@ classdef paresto < handle
       %% end
       % Set small or negative eigenvalues to zero
       if (min(e) < 1e-10)
-	e(find(e < 1e-10)) = 0;
-	diag_inv_H = zeros(n_est,1);
-	for i = 1:n_est
-	  vi = v(:,i);
-	  diag_inv_H = diag_inv_H + diag(vi*vi')./e(i);
-	end
+      	e(find(e < 1e-10)) = 0;
+      	diag_inv_H = zeros(n_est,1);
+      	for i = 1:n_est
+      	  vi = v(:,i);
+      	  diag_inv_H = diag_inv_H + diag(vi*vi')./e(i);
+      	end
       else
-	diag_inv_H = diag(v*diag(1./e)*v');
+      	diag_inv_H = diag(v*diag(1./e)*v');
       end
+      %%
+      %% try this; simpler and better(?)
+      %% diag_inv_H = diag(inv(H));
       % Total number of data points
       n_data = self.nsets*r.n_data;
 
