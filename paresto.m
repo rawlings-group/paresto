@@ -629,8 +629,14 @@ classdef paresto < handle
       lbw(self.thetaind) = r.thetavec;
       ubw(self.thetaind) = r.thetavec;
 
+      disp('lbw')
+      disp(lbw)
+      disp('ubw')
+      disp(ubw)
+
       sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
                    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
+      disp(sol.x(8))
 
       % Optimal cost
       r.f = full(sol.f);
@@ -688,8 +694,11 @@ classdef paresto < handle
   %% Ensure lam_x(self.thetaind) is not exactly zero
   sol.lam_x = full(sol.lam_x);
   sol.lam_x(sol.lam_x(self.thetaind)==0) = 1e-300;
+  sol.lam_x(8) = 0;
   sol.lam_x = casadi.DM(sol.lam_x);
-  
+
+
+  disp(self.thetaind)
   disp('sol.x');
   disp(sol.x);
   disp('sol.lam_x');
@@ -709,6 +718,8 @@ classdef paresto < handle
 			    'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g,... 
 			    'fwd_lbx', seed, 'fwd_ubx', seed);
         sens = -full(fsol.fwd_lam_x);
+        disp('sens')
+        disp(sens)
         r.d2f_dtheta2 = sens(self.thetaind,:);
 
         % Get forward derivatives w.r.t. theta
