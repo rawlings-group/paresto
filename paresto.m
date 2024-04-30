@@ -689,6 +689,19 @@ classdef paresto < handle
   sol.lam_x = full(sol.lam_x);
   sol.lam_x(sol.lam_x(self.thetaind)==0) = 1e-300;
   sol.lam_x = casadi.DM(sol.lam_x);
+  
+  disp('sol.x');
+  disp(sol.x);
+  disp('sol.lam_x');
+  disp(sol.lam_x);
+  disp('sol.lam_g');
+  disp(sol.lam_g);
+  disp('sol.lam_p');
+  disp(sol.lam_p);
+  disp('sol.f');
+  disp(sol.f);
+  disp('sol.g');
+  disp(sol.g);
 
 	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
 			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
