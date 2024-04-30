@@ -58,8 +58,6 @@ classdef paresto < handle
     presolver
     % Calculate parametric sensitivities of solver
     fsolver
-    % Calculate parametric sensitivities of solver
-    z0fun
   end
   methods
     function self = paresto(model)
@@ -153,8 +151,6 @@ classdef paresto < handle
       % Collocation equations
       msg('Collocation equations');
       self.collocation()
-      
-      self.init_z0fun()
 
       % NLP transcription
       self.transcribe()
@@ -301,24 +297,6 @@ classdef paresto < handle
       end
     end
 
-    function init_z0fun(self)
-      x0 = casadi.MX.sym('x0', self.nx);
-      z0 = casadi.MX.sym('z0', self.nz);
-      p = casadi.MX.sym('p', self.np);
-      d = casadi.MX.sym('d', self.nd);
-      g = {};
-      f0 = self.daefun('t', 0, 'p', p,...
-                          'x', x0, 'z', z0, 'd', d);
-      g{end+1} = f0.alg;
-      g = vertcat(g{:});                          
-      rfp = struct('x', z0, 'p', [x0;p;d], 'g', g);
-      rf = casadi.rootfinder('rf', 'newton', rfp,struct('error_on_fail',false,'line_search',false));
-      rfsol = rf('x0', ones(self.nz, 1), 'p', [x0;p;d]);
-      self.z0fun = casadi.Function('z0fun', ...
-       {x0, [p;d]}, {rfsol.x}, ...
-                      {'x0', 'p'}, {'z0'});
-    end
-
     function collocation(self)
       % COLLOCATION(SELF) Collocation equations needed for NLP transcription
 
@@ -350,14 +328,11 @@ classdef paresto < handle
       end
 
       % Expression for the end state
-      % xf = D(1)*x0;
-      % for j=1:self.ord
-      %   xf = xf + D(j+1)*x{j};
-      % end
-      % disp(xf)
-      xf = x{self.ord};
-      zf = z{self.ord};
-      xzf = [xf;zf];
+      xf = D(1)*x0;
+      for j=1:self.ord
+        xf = xf + D(j+1)*x{j};
+      end
+
 
       % Collocation equations
       g = {};
@@ -384,9 +359,10 @@ classdef paresto < handle
           self.dynfun = casadi.Function('dynfun', ...
                 {x0, [t;h;p;d], xz}, {xf, g}, {'x0', 'p', 'xz'}, {'xf', 'g'});
         case 'shooting'
-          % Initial algebraic state of ones
-          % z0 = casadi.MX.sym('z0', self.nz);
-          z0 = ones(self.nz, 1);
+          % Initial algebraic state
+          z0 = casadi.MX.sym('z0', self.nz);
+          zf = z{self.ord};
+          xzf = [xf;zf];
           % Rootfinding problem
           rfp = struct('x', xz, 'p', [x0;t;h;p;d], 'g', g);
           % Rootfinding solver
@@ -394,13 +370,13 @@ classdef paresto < handle
 	  % Suggestion to better handle bad initial guess; Joris Gillis, 9/4/2020
           rf = casadi.rootfinder('rf', 'newton', rfp,struct('error_on_fail',false,'line_search',false));
 	  % Function that evaluates state at end time
-          xzf_fun = casadi.Function('xzf_fun', {xz}, {xzf}, {'xz'}, {'xzf'}, struct('allow_free', false));
+          xzf_fun = casadi.Function('xzf_fun', {xz}, {xzf}, {'xz'}, {'xzf'}, struct('allow_free', true));
           % Solution to the rootfinding problem
           rfsol = rf('x0', [repmat([x0;z0], self.ord, 1)], 'p', [x0;t;h;p;d]);
           xzfsol = xzf_fun(rfsol.x);
           % Wrap rootfinder in an object with integrator syntax
-          self.dynfun = casadi.Function('dynfun', {x0, [t;h;p;d]}, {xzfsol}, ...
-                      {'x0', 'p'}, {'xzf'});
+          self.dynfun = casadi.Function('dynfun', {x0, z0, [t;h;p;d]}, {xzfsol}, ...
+                      {'x0', 'z0', 'p'}, {'xzf'});
         otherwise
           error(['No such transcription: ' self.transcription]);
       end
@@ -438,7 +414,6 @@ classdef paresto < handle
 
       % Free parameter
       p = casadi.MX.sym('p', self.np);
-    
       w{end+1} = p;
       w_elim{end+1} = p;
 
@@ -480,8 +455,7 @@ classdef paresto < handle
         dk = casadi.MX.sym(['d0' s], self.nd);
         d{end+1} = dk;
         sf = self.stagefun('t', tk, 'x', xk, 'z', zk, 'p', p, 'd', dk);
-        z0_from_x0 = self.z0fun('x0', xk, 'p', [p;dk]);
-        g{end+1} = zk - z0_from_x0.z0; %comment
+        g{end+1} = sf.alg;
         if lsq_ind(1)
           lsq{end+1} = sf.lsq;
         end
@@ -503,7 +477,7 @@ classdef paresto < handle
               g{end+1} = Fk.g;
             case 'shooting'
               % Call ODE/DAE integrator
-              Fk = self.dynfun('x0', xk, 'p', [tk;hk;p;dk]);
+              Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
             otherwise
               error(['No such transcription: ' self.transcription]);
           end
@@ -530,7 +504,7 @@ classdef paresto < handle
           dk = casadi.MX.sym(['d' num2str(k) s], self.nd);
           d{end+1} = dk;
           sf = self.stagefun('t', tk, 'x', xk, 'z', zk, 'p', p, 'd', dk);
-          % g{end+1} = sf.alg;
+          %g{end+1} = sf.alg;
           if lsq_ind(k+1)
             lsq{end+1} = sf.lsq;
           end
@@ -539,6 +513,7 @@ classdef paresto < handle
 
       % Concatenate vectors
       g = vertcat(g{:});
+      %disp(size(g))
       w = vertcat(w{:});
       sens = vertcat(sens{:});
       lsq = vertcat(lsq{:});
@@ -633,8 +608,15 @@ classdef paresto < handle
       x0 = sol.x;
       lam_g0 = sol.lam_g;
       lam_x0 = sol.lam_x;
+      %disp(self.solver.get_function('nlp_g'))
       sol = self.solver('x0', x0, 'lam_x0', lam_x0, 'lam_g0', lam_g0,...
                         'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
+      % disp(sol.x)
+      nlp_g_function = self.solver.get_function('nlp_g');
+      % disp(class(nlp_g_function));
+      % disp(d);
+      result = nlp_g_function(sol.x,d);
+      % disp(result)
       % Return structure
       r = struct;
 
@@ -647,9 +629,9 @@ classdef paresto < handle
       lbw(self.thetaind) = r.thetavec;
       ubw(self.thetaind) = r.thetavec;
 
-
       sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
                    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
+
       % Optimal cost
       r.f = full(sol.f);
 
@@ -698,31 +680,26 @@ classdef paresto < handle
       % Forward sensitivity analysis
       if calc_hess
         msg('Sensitivity analysis');
-  %% Ensure lam_g is not exactly zero
+        %% Ensure lam_g is not exactly zero
 	sol.lam_g = full(sol.lam_g);
 	sol.lam_g(sol.lam_g == 0) = 1e-300;
 	sol.lam_g = casadi.DM(sol.lam_g);
-  
-  %% Ensure lam_x(self.thetaind) is not exactly zero
-  sol.lam_x = full(sol.lam_x);
-  sol.lam_x(sol.lam_x(self.thetaind)==0) = 1e-300;
-	sol.lam_x = casadi.DM(sol.lam_x);
-
 	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
 			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
 			    'out_x', sol.x, 'out_lam_x', sol.lam_x, 'out_lam_g', sol.lam_g,...
 			    'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g,... 
 			    'fwd_lbx', seed, 'fwd_ubx', seed);
-  sens = -full(fsol.fwd_lam_x);
-  r.d2f_dtheta2 = sens(self.thetaind,:);
-  % Get forward derivatives w.r.t. theta
-  [dx_dtheta, dz_dtheta, dp_dtheta] = self.from_w(fsol.fwd_x);
-  r.dx_dtheta = reshape(full(dx_dtheta), self.nx, self.N + 1, self.nsets, n_est);
-  r.dz_dtheta = reshape(full(dz_dtheta), self.nz, self.N + 1, self.nsets, n_est);
-  r.dp_dtheta = full(dp_dtheta);
+        sens = -full(fsol.fwd_lam_x);
+        r.d2f_dtheta2 = sens(self.thetaind,:);
 
-  % Fields in theta
-  r.thetafields = self.model.p;
+        % Get forward derivatives w.r.t. theta
+        [dx_dtheta, dz_dtheta, dp_dtheta] = self.from_w(fsol.fwd_x);
+        r.dx_dtheta = reshape(full(dx_dtheta), self.nx, self.N + 1, self.nsets, n_est);
+        r.dz_dtheta = reshape(full(dz_dtheta), self.nz, self.N + 1, self.nsets, n_est);
+        r.dp_dtheta = full(dp_dtheta);
+
+        % Fields in theta
+        r.thetafields = self.model.p;
 	for i = 1:self.np
 	  field = self.model.p{i};
 	  lbnames.(field) = lb.(field);
@@ -735,24 +712,24 @@ classdef paresto < handle
           else
             s = '';
           end
-            % Add initial condition fields; create names for IC bounds
-            for i=1:self.nx
-        % Initial condition field name
-        ICname = [self.model.x{i} '0' s];
-        r.thetafields{end+1} = ICname;
-        if (isfield (lb, self.model.x{i}))
-          if self.nsets > 1
-      lbnames.(ICname) = lb.(self.model.x{i})(:,:,e);
-      ubnames.(ICname) = ub.(self.model.x{i})(:,:,e);
-          else
-      lbnames.(ICname) = lb.(self.model.x{i})(:,1);
-      ubnames.(ICname) = ub.(self.model.x{i})(:,1);
-                end
-        else
-          lbnames.(ICname) = -inf;
-          ubnames.(ICname) = inf;
-        end
-      end
+          % Add initial condition fields; create names for IC bounds
+          for i=1:self.nx
+	    % Initial condition field name
+	    ICname = [self.model.x{i} '0' s];
+	    r.thetafields{end+1} = ICname;
+	    if (isfield (lb, self.model.x{i}))
+	      if self.nsets > 1
+		lbnames.(ICname) = lb.(self.model.x{i})(:,:,e);
+		ubnames.(ICname) = ub.(self.model.x{i})(:,:,e);
+	      else
+		lbnames.(ICname) = lb.(self.model.x{i})(:,1);
+		ubnames.(ICname) = ub.(self.model.x{i})(:,1);
+              end
+	    else
+	      lbnames.(ICname) = -inf;
+	      ubnames.(ICname) = inf;
+	    end
+	  end
         end
         % Split up dx_dtheta, dz_dtheta by name
         for j=1:numel(r.thetafields)
@@ -824,15 +801,18 @@ classdef paresto < handle
       %% end
       % Set small or negative eigenvalues to zero
       if (min(e) < 1e-10)
-	e(find(e < 1e-10)) = 0;
-	diag_inv_H = zeros(n_est,1);
-	for i = 1:n_est
-	  vi = v(:,i);
-	  diag_inv_H = diag_inv_H + diag(vi*vi')./e(i);
-	end
+      	e(find(e < 1e-10)) = 0;
+      	diag_inv_H = zeros(n_est,1);
+      	for i = 1:n_est
+      	  vi = v(:,i);
+      	  diag_inv_H = diag_inv_H + diag(vi*vi')./e(i);
+      	end
       else
-	diag_inv_H = diag(v*diag(1./e)*v');
+      	diag_inv_H = diag(v*diag(1./e)*v');
       end
+      %%
+      %% try this; simpler and better(?)
+      %% diag_inv_H = diag(inv(H));
       % Total number of data points
       n_data = self.nsets*r.n_data;
 

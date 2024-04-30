@@ -107,8 +107,6 @@ disp('Estimated parameters')
 disp(est.theta)
 disp('Bounding box intervals')
 disp(conf.bbox)
-disp('conf.H')
-disp(conf.H)
 
 
 %%plot the model fit to the noisy measurements
