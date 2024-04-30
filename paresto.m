@@ -680,10 +680,16 @@ classdef paresto < handle
       % Forward sensitivity analysis
       if calc_hess
         msg('Sensitivity analysis');
-        %% Ensure lam_g is not exactly zero
+  %% Ensure lam_g is not exactly zero
 	sol.lam_g = full(sol.lam_g);
 	sol.lam_g(sol.lam_g == 0) = 1e-300;
 	sol.lam_g = casadi.DM(sol.lam_g);
+
+  %% Ensure lam_x(self.thetaind) is not exactly zero
+  sol.lam_x = full(sol.lam_x);
+  sol.lam_x(sol.lam_x(self.thetaind)==0) = 1e-300;
+  sol.lam_x = casadi.DM(sol.lam_x);
+
 	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
 			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
 			    'out_x', sol.x, 'out_lam_x', sol.lam_x, 'out_lam_g', sol.lam_g,...
