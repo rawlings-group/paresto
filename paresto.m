@@ -190,12 +190,9 @@ classdef paresto < handle
       % DAE
       ode = self.fun2sym('ode', t, yy, pp);
       alg = self.fun2sym('alg', t, yy, pp);
-      disp(alg.size(1)>0)
       % Check dg/dz
-      disp(alg.size(1))
       if alg.size(1)>0
         dalgdz = jacobian(alg, z);
-        disp(dalgdz)
         determinant_dalgdz = det(dalgdz);
         if is_zero(determinant_dalgdz)
           warning('The Jacobian of the algebraic equations wrt z is singular. You may have formulated a high index DAE.');
