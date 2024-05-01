@@ -191,6 +191,14 @@ classdef paresto < handle
       ode = self.fun2sym('ode', t, yy, pp);
       alg = self.fun2sym('alg', t, yy, pp);
 
+      % Check dg/dz
+      dalgdz = jacobian(alg, z);
+      determinant_dalgdz = det(dalgdz);
+      if is_zero(determinant_dalgdz)
+        error('The Jacobian of the algebraic equations wrt z is singular. You may have formulated a high index DAE.');
+      endif
+
+
       % Least squares objective
       lsq = self.fun2sym('lsq', t, yy, pp);
 
@@ -629,14 +637,9 @@ classdef paresto < handle
       lbw(self.thetaind) = r.thetavec;
       ubw(self.thetaind) = r.thetavec;
 
-      disp('lbw')
-      disp(lbw)
-      disp('ubw')
-      disp(ubw)
 
       sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
                    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
-      disp(sol.x(8))
 
       % Optimal cost
       r.f = full(sol.f);
@@ -691,26 +694,14 @@ classdef paresto < handle
 	sol.lam_g(sol.lam_g == 0) = 1e-300;
 	sol.lam_g = casadi.DM(sol.lam_g);
 
-  %% Ensure lam_x(self.thetaind) is not exactly zero
   sol.lam_x = full(sol.lam_x);
+  %% Ensure lam_x(~self.thetaind) is exactly zero, i.e., don't constrain free parameters
+  sol.lam_x(abs(sol.lam_x)<1e-13) = 0;
+  %% Ensure lam_x(self.thetaind) is not exactly zero
   sol.lam_x(sol.lam_x(self.thetaind)==0) = 1e-300;
-  sol.lam_x(8) = 0;
   sol.lam_x = casadi.DM(sol.lam_x);
 
 
-  disp(self.thetaind)
-  disp('sol.x');
-  disp(sol.x);
-  disp('sol.lam_x');
-  disp(sol.lam_x);
-  disp('sol.lam_g');
-  disp(sol.lam_g);
-  disp('sol.lam_p');
-  disp(sol.lam_p);
-  disp('sol.f');
-  disp(sol.f);
-  disp('sol.g');
-  disp(sol.g);
 
 	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
 			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
@@ -718,8 +709,6 @@ classdef paresto < handle
 			    'out_lam_p', sol.lam_p, 'out_f', sol.f, 'out_g', sol.g,... 
 			    'fwd_lbx', seed, 'fwd_ubx', seed);
         sens = -full(fsol.fwd_lam_x);
-        disp('sens')
-        disp(sens)
         r.d2f_dtheta2 = sens(self.thetaind,:);
 
         % Get forward derivatives w.r.t. theta
