@@ -695,9 +695,14 @@ classdef paresto < handle
 	sol.lam_g = casadi.DM(sol.lam_g);
 
   sol.lam_x = full(sol.lam_x);
-  %% Ensure lam_x(~self.thetaind) is exactly zero, i.e., don't constrain free parameters
+  %% Ensure lam_x(~self.thetaind) is exactly zero, 
+  %% i.e., don't constrain variables to be solved for
+  %% such as z0
   sol.lam_x(abs(sol.lam_x)<1e-13) = 0;
-  %% Ensure lam_x(self.thetaind) is not exactly zero
+  %% Ensure lam_x(self.thetaind) is not exactly zero,
+  %% i.e., enforce equality constraints 
+  %% on estimated parameters and initial conditions
+  %% even if they don't appear in objective function
   sol.lam_x(sol.lam_x(self.thetaind)==0) = 1e-300;
   sol.lam_x = casadi.DM(sol.lam_x);
 
