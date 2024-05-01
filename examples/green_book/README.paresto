@@ -209,7 +209,7 @@ sample times but the solver controls stepsize independently of that.
 
 12. When using *sets* of experiments, allow some parameters to be specific to each
 experiment, and others to be common among all the experiments. Currently all
-parameters are commone to all experiments.
+parameters are common to all experiments.
 
 13.  Can we have multiple experiments with different model types for each experiment
 (some batch, some steady state, for example), and both common/specific parameters.
@@ -218,6 +218,8 @@ parameters are commone to all experiments.
 may be passed into the user's DAE functions by anonymous funtions as in standard
 octave/matlab.  There is no need to supply special paresto options for passing
 constants.
+
+4/2024
 
 15. Titus made changes to DAE solver to return both the state and algebraic variables.
 Previously, the DAE solver only returned the state variables,
@@ -234,3 +236,7 @@ is a high-index DAE. Such as examples/simplerxn_implicit.m
 
 18. Set sol.lam_x(thetaind) to be nonzero. fix bug when parameters or initial conditions did not appear in the objective, 
   confidence intervals for other parameters were affected.
+
+19. JBR tried a different treatment of confidence intervals for small or negative eigenvalues of
+    Hessian; now generates Infs when parameters have no effect, but no NaNs, i.e., avoids 0/0.
+    

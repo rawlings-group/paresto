@@ -16,7 +16,7 @@ daemodel.transcription = 'shooting';
 daemodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for daeebraic model
 daemodel.nlp_solver_options.sens_linsol_options.eps = 0;
-daemodel.print_level = 1;
+daemodel.print_level = 0;
 %
 daemodel.x = {'A', 'B', 'C'};
 daemodel.z = {'Adot', 'Bdot', 'Cdot'};

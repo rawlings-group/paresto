@@ -805,7 +805,10 @@ classdef paresto < handle
 
       % Quick return if n_est = 0
       if n_est==0
-        theta_conf = [];
+	conf.H =[];
+	conf.diag_inv_H = [];
+	conf.bbox = [];
+	conf.mbox = [];
         return
       end
 
@@ -826,20 +829,20 @@ classdef paresto < handle
       %%   theta_conf(i) = self.confidence(r, conf_ind(i), alpha);
       %%   return;
       %% end
-      % Set small or negative eigenvalues to zero
-      if (min(e) < 1e-10)
-      	e(find(e < 1e-10)) = 0;
-      	diag_inv_H = zeros(n_est,1);
-      	for i = 1:n_est
-      	  vi = v(:,i);
-      	  diag_inv_H = diag_inv_H + diag(vi*vi')./e(i);
-      	end
+      rH = sum ( e >= 1e-10 );
+      if( rH < n_est )
+	%% treat small or negative eigenvalues here
+	[e, perm] = sort(e, 'descend');
+	v = v(:, perm);
+	v1 = v(:,1:rH);
+	v2 = v(:,rH+1:end);
+	diag_inv_H = diag( v1*diag( 1./e(1:rH) )*v1' );
+	%% insert Inf for entries diag(inv(H)) where inverting suspect eigenvalue
+	ind = (diag(v2*v2') != 0);
+	diag_inv_H(ind) = inf;
       else
-      	diag_inv_H = diag(v*diag(1./e)*v');
-      end
-      %%
-      %% try this; simpler and better(?)
-      %% diag_inv_H = diag(inv(H));
+	diag_inv_H = diag(v*diag(1./e)*v');
+      endif
       % Total number of data points
       n_data = self.nsets*r.n_data;
 
