@@ -218,3 +218,19 @@ parameters are commone to all experiments.
 may be passed into the user's DAE functions by anonymous funtions as in standard
 octave/matlab.  There is no need to supply special paresto options for passing
 constants.
+
+15. Titus made changes to DAE solver to return both the state and algebraic variables.
+Previously, the DAE solver only returned the state variables,
+and the algebraic variables were calculated from the state variables.
+This led to also changing the collocation points to include the end point,
+i.e. Radau collocation. 
+
+16. For unknown reasons, fix #15 led to initial algebraic variables lagrange multipliers
+to be a small nonzero number, rather than zero.
+This is fixed by setting sol.lam_x for indices other that thetaind to be zero.
+
+17. Added lines to check if dg/dz is nonsingular, i.e., checks if formulation 
+is a high-index DAE. Such as examples/simplerxn_implicit.m
+
+18. Set sol.lam_x(thetaind) to be nonzero. fix bug when parameters or initial conditions did not appear in the objective, 
+  confidence intervals for other parameters were affected.

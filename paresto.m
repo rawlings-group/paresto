@@ -190,6 +190,17 @@ classdef paresto < handle
       % DAE
       ode = self.fun2sym('ode', t, yy, pp);
       alg = self.fun2sym('alg', t, yy, pp);
+      disp(alg.size(1)>0)
+      % Check dg/dz
+      disp(alg.size(1))
+      if alg.size(1)>0
+        dalgdz = jacobian(alg, z);
+        disp(dalgdz)
+        determinant_dalgdz = det(dalgdz);
+        if is_zero(determinant_dalgdz)
+          warning('The Jacobian of the algebraic equations wrt z is singular. You may have formulated a high index DAE.');
+        end
+      end
 
       % Least squares objective
       lsq = self.fun2sym('lsq', t, yy, pp);
@@ -629,6 +640,7 @@ classdef paresto < handle
       lbw(self.thetaind) = r.thetavec;
       ubw(self.thetaind) = r.thetavec;
 
+
       sol = self.solver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
                    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d);
 
@@ -685,10 +697,19 @@ classdef paresto < handle
 	sol.lam_g(sol.lam_g == 0) = 1e-300;
 	sol.lam_g = casadi.DM(sol.lam_g);
 
-  %% Ensure lam_x(self.thetaind) is not exactly zero
   sol.lam_x = full(sol.lam_x);
+  %% Ensure lam_x(~self.thetaind) is exactly zero, 
+  %% i.e., don't constrain variables to be solved for
+  %% such as z0
+  sol.lam_x(abs(sol.lam_x)<1e-13) = 0;
+  %% Ensure lam_x(self.thetaind) is not exactly zero,
+  %% i.e., enforce equality constraints 
+  %% on estimated parameters and initial conditions
+  %% even if they don't appear in objective function
   sol.lam_x(sol.lam_x(self.thetaind)==0) = 1e-300;
   sol.lam_x = casadi.DM(sol.lam_x);
+
+
 
 	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
 			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
