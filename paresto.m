@@ -195,7 +195,7 @@ classdef paresto < handle
       dalgdz = jacobian(alg, z);
       determinant_dalgdz = det(dalgdz);
       if is_zero(determinant_dalgdz)
-        error('The Jacobian of the algebraic equations wrt z is singular. You may have formulated a high index DAE.');
+        warning('The Jacobian of the algebraic equations wrt z is singular. You may have formulated a high index DAE.');
       endif
 
 
