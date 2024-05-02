@@ -18,7 +18,9 @@ classdef paresto < handle
     simulator
     % Number of experiments
     nsets
-    % Number of measurements
+    % Total number of data points in all experiments
+    ndata
+    % Number of measurement times - 1
     N
     % Number of states
     nx
@@ -92,6 +94,11 @@ classdef paresto < handle
         self.nsets = model.nsets;
       else
         self.nsets = 1;
+      end
+
+      % Total number of measurement points in all data sets
+      if isfield(model, 'ndata')
+        self.ndata = model.ndata;
       end
 
       % Order of interpolating polynomials
@@ -777,9 +784,9 @@ classdef paresto < handle
       for i = 1: numel(r.conf_ind)
 	r.theta.(r.thetafields{r.conf_ind(i)}) = r.thetavec(r.conf_ind(i));
       end
-      %% Store number of data points in each dataset:
+      %% Store best guess of number of data points in each dataset:
       %% number time points x length of measurement vector
-      r.n_data = numel(self.model.lsq_ind)*numel(self.model.lsq);
+      r.n_data = numel(self.model.lsq_ind)*numel(self.model.d);
       % Done
       msg('Optimization complete');
     end
@@ -840,9 +847,13 @@ classdef paresto < handle
       else
 	diag_inv_H = diag(v*diag(1./e)*v');
       endif
-      % Total number of data points
-      n_data = self.nsets*r.n_data;
-
+      % Total number of data points; either user has provided it, or 
+      % make educated guess
+      if (isfield(self.model, 'ndata'))
+        n_data = self.ndata;
+      else
+        n_data = self.nsets*r.n_data;
+      end
       % Calculate Fstat, bounding box and marginal box
       try
         Fstat = finv(alpha, n_est, n_data-n_est);
