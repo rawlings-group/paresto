@@ -703,9 +703,9 @@ classdef paresto < handle
 
   sol.lam_x = full(sol.lam_x);
   %% Ensure lam_x(~self.thetaind) is exactly zero, 
-  %% i.e., don't constrain variables to be solved for
-  %% such as z0
-  sol.lam_x(abs(sol.lam_x)<1e-13) = 0;
+  %% i.e., trajectory variables x1, x2,... and z0, z1,... are unconstrained
+  traj_indices = setdiff(1:length(sol.lam_x), self.thetaind);
+  sol.lam_x(traj_indices) = 0;
   %% Ensure lam_x(self.thetaind) is not exactly zero,
   %% i.e., enforce equality constraints 
   %% on estimated parameters and initial conditions
