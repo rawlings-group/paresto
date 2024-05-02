@@ -10,7 +10,7 @@
 
 %%Model
 model = struct;
-model.print_level = 1;
+model.print_level = 0;
 model.transcription = "shooting";
 %model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 model.nlp_solver_options.ipopt.mumps_scaling = 0;
@@ -27,16 +27,16 @@ model.lsq = @(t, y, p) { y.a - y.m_a, p.k2 - y.m_b };
 %model.lsq = @(t, y, p) {p.k1^2 - y.m_a, p.k2^2 - y.m_b };
 
 %% create two time point measurements
-%%tout = [0, 1];
-tout = [0];
+tout = [0, 1];
+%tout = [0];
 model.tout = tout;
 
 k1 = 1;
 k2 = 2;
 
 %ymeas = [ k1^2 + 0.5, k1^2 - 0.25; sqrt(k2) + 1, sqrt(k2) - 0.5 ];
-%%ymeas = [ k1 + 1, k1 - 0.5;  k2 + 2, k2 - 1 ];
-ymeas = [ k1 + 1;  k2 + 2 ];
+ymeas = [ k1 + 1, k1 - 0.5;  k2 + 2, k2 - 1 ];
+%%ymeas = [ k1 + 1;  k2 + 2 ];
 
 % Create a paresto instance
 pe = paresto(model);
