@@ -18,7 +18,9 @@ classdef paresto < handle
     simulator
     % Number of experiments
     nsets
-    % Number of measurements
+    % Total number of data points in all experiments
+    ndata
+    % Number of measurement times - 1
     N
     % Number of states
     nx
@@ -92,6 +94,11 @@ classdef paresto < handle
         self.nsets = model.nsets;
       else
         self.nsets = 1;
+      end
+
+      % Total number of measurement points in all data sets
+      if isfield(model, 'ndata')
+        self.ndata = model.ndata;
       end
 
       % Order of interpolating polynomials
@@ -782,7 +789,8 @@ classdef paresto < handle
       end
       %% Store number of data points in each dataset:
       %% number time points x length of measurement vector
-      r.n_data = numel(self.model.lsq_ind)*numel(self.model.lsq);
+%      r.n_data = numel(self.model.lsq_ind)*numel(self.model.lsq);
+      r.n_data = numel(self.model.lsq_ind)*numel(self.model.d);
       % Done
       msg('Optimization complete');
     end
@@ -848,6 +856,8 @@ classdef paresto < handle
 
       % Calculate Fstat, bounding box and marginal box
       try
+	disp(n_data)
+	disp(n_est)
         Fstat = finv(alpha, n_est, n_data-n_est);
         Fstatm = finv(alpha, 1, n_data-n_est);
       catch ME
