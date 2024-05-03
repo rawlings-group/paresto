@@ -99,6 +99,10 @@ k1k2ratio   =  2;
 model.tout = tout';
 model.lsq_ind = lc_ind'; % only include lc_ind in objective
 
+%% must tell paresto number of meas points since model.d
+%% has 2 (flow, meas) instead of 1 (meas) elements
+model.ndata = numel(model.lsq_ind);
+
 % Create a paresto instance
 pe = paresto(model);
 
@@ -211,6 +215,10 @@ k1k2ratio   =  2;
 % Options
 model.tout = tout';
 model.lsq_ind = lc_ind'; % only include lc_ind in objective
+
+%% must tell paresto number of meas points since model.d
+%% has 2 (flow, meas) instead of 1 (meas) elements
+model.ndata = numel(model.lsq_ind);
 
 % Create a paresto instance
 pesim = paresto(model);
