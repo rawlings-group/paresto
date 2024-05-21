@@ -227,9 +227,6 @@ pesim = paresto(model);
 lb = theta0;
 lb.nA0 = 0.5*theta0.nA0;
 lb.k = 0.5*theta0.k;
-% We aren't estimating cBf and VR0
-lb.VR = [theta0.VR, -inf(1,N-1)]; %zeros(1,N-1)];
-lb.eps2 = [theta0.eps2, -inf(1,N-1)]; %zeros(1,N-1)];
 
 
 % Upper bounds for parameters
@@ -237,8 +234,6 @@ ub = theta0;
 ub.nA0 = 1.5*theta0.nA0;
 ub.k = 1.5*theta0.k;
 
-ub.VR = [theta0.VR, inf(1,N-1)];
-ub.eps2 = [theta0.eps2, inf(1,N-1)];
 
 %% Estimate parameters
 
