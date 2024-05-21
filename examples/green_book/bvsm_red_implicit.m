@@ -1,9 +1,17 @@
 % [makes] bvsm_red.dat
 % [depends] lc.dat flow.dat lcsim.dat
 % 
-% We have the reduced ODE model
-% dot(VR) = Qf
-% dot(eps2) = Qf*cBf/(1 + k (nA0-nBadded+eps2)/(nBadded-2*eps2))
+% We have the reduced implicit ODEs, as a DAE
+% x = [VR, eps1, eps2]
+% z = [eps1dot, eps2dot]
+%
+% ODEs:
+% d/dt VR = Qf
+% d/dt eps1 = z1
+% d/dt eps2 = z2
+% Alg:
+%  z1 + z2 = Badd = (VR-VR0)*cBf
+%  nC*z1 = (k1/k2) * nA*z2
 %
 %
 % with:
@@ -11,9 +19,9 @@
 % Qf: Volumetric flowrate of base
 % cBf: Feed concentration of B
 %
-% Initial conditions: x(0) = [VR0, 0]
+% Initial conditions: x(0) = [VR0, 0, 0]
 % Unknown parameters: k (= k1/k2), n_A0
-% Output function: y = nC/(nC + 2*nD) = 1/(1+2*nD/nC)
+% Output function: y = h(x) = nC/(nC + 2*nD) = 1/(1+2*nD/nC)
 %
 % jbr, Joel Andersson, 4/18/2018
 % jbr, converted to implict ODEs, 5/20/2024
