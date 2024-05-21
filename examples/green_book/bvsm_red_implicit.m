@@ -10,7 +10,7 @@
 % d/dt eps1 = z1
 % d/dt eps2 = z2
 % Alg:
-%  z1 + z2 = Badd = (VR-VR0)*cBf
+%  z1 + z2 = Qf*cBf 
 %  nC*z1 = (k1/k2) * nA*z2
 %
 %
@@ -35,7 +35,7 @@ model.nlp_solver_options.ipopt.mumps_scaling = 0;
 model.nlp_solver_options.sens_linsol_options.eps = 0;
 model.x = {'VR', 'eps1', 'eps2'};
 model.z = {'eps1dot', 'eps2dot'};
-model.p = {'nA0', 'k', 'cBf', 'VR0'};
+model.p = {'nA0', 'k', 'cBf'};
 
 % Dependent variables with definitions
 model.y = {'lc'};
@@ -124,7 +124,6 @@ theta0 = struct;
 theta0.nA0 = vrdiclo;
 theta0.k = k1k2ratio;
 theta0.cBf = teaf;
-theta0.VR0 = VR0;
 % Initial guess for initial conditions
 theta0.VR = VR0;
 theta0.eps1 = 0;
@@ -133,14 +132,15 @@ theta0.eps1dot = 0;
 theta0.eps2dot = 0;
 
 % Lower bounds for parameters
-% We aren't estimating cBf and VR0
+% We aren't estimating cBf
+% loosen bounds on alg variables 
 lb = theta0;
 lb.nA0 = 0.5*theta0.nA0;
 lb.k = 0.5*theta0.k;
 lb.eps1dot = -inf;
 lb.eps2dot = -inf;
 
-% Upper bounds for parameters
+% Upper bounds for parameters and alg variables
 ub = theta0;
 ub.nA0 = 1.5*theta0.nA0;
 ub.k = 1.5*theta0.k;
@@ -170,6 +170,47 @@ tmp = [xx, yy];
 table1 = [model.tout', v.lc'];
 table2 = [tlc, lc];
 
+% compute the rest of the states from the reduced model
+
+nD = v.eps2;
+nC = v.eps1 - v.eps2;
+nB = zeros(size(nD));
+nA = p.nA0 - v.eps1;
+
+if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
+subplot(2,2,1)
+hold on
+plot(model.tout, nA)
+plot(model.tout, nC)
+plot(model.tout, nD)
+legend({'n_A', 'n_C', 'n_D'});
+xlabel('time (min)')
+ylabel('Amount of substance (kmol)')
+title('Amount of substance of species A, C and D versus time')
+
+subplot(2,2,2)
+hold on
+plot(model.tout, nB)
+legend({'n_B'});
+xlabel('time (min)')
+ylabel('Amount of substance (kmol)')
+title('Amount of substance of species B versus time')
+
+subplot(2,2,3)
+stairs(model.tout, v.Qf)
+xlabel('time (min)')
+ylabel('flowrate (kg/min)')
+title('Base addition rate')
+
+subplot(2,2,4)
+hold on
+plot(model.tout, v.lc, tlc, lc, 'o')
+%ylim([0, 2*max(lc)])
+legend({'model', 'measurement'});
+xlabel('time (min)')
+title('LC measurement')
+
+endif %% PLOTTING
 
 %% Estimate parameters again with the early time LC data
 
@@ -262,13 +303,10 @@ disp(confsim.bbox)
 
 % compute the rest of the states from the reduced model
 
-Badded = (v.VR - p.VR0)*p.cBf;
 nD = v.eps2;
-nC = Badded - 2*nD;
-nB = zeros(size(Badded));
-eps1 = Badded-v.eps2;
-nA = p.nA0 - Badded + v.eps2;
-deps2dt = v.Qf*p.cBf / (1. + p.k*(p.nA0 - Badded + v.eps2)/(Badded - 2*v.eps2));
+nC = v.eps1 - v.eps2;
+nB = zeros(size(nC));
+nA = p.nA0 - v.eps1;
 
 ndata = length(tlc);
 Fstat = np*finv(alpha, np, ndata-np);
@@ -281,6 +319,7 @@ table1ex = [model.tout', v.lc'];
 table2ex = [tlc, lc];
 
 if (~ strcmp (getenv ('OMIT_PLOTS'), 'true')) %% PLOTTING
+figure()
 subplot(2,2,1)
 hold on
 plot(model.tout, nA)
