@@ -20,7 +20,8 @@
 
 % Model
 model = struct;
-model.transcription = 'shooting';
+% model.transcription = 'shooting';
+model.transcription = "simultaneous";
 %model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 model.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model

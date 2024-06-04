@@ -23,17 +23,19 @@
 %%
 
 model=struct;
-model.transcription = 'shooting';
-model.print_level = 1;
-%model.nlp_solver_options.ipopt.mumps_scaling = 0;
-model.nlp_solver_options.ipopt.linear_solver = 'ma27';
+% model.transcription = 'shooting';
+model.transcription = "simultaneous";
+model.ord = 2;
+model.print_level = 0;
+model.nlp_solver_options.ipopt.mumps_scaling = 0;
+% model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 
 model.x = {'ca', 'cb', 'cc'};
 model.p = {'k1', 'k2', 'k3', 'k4', 'k5', 'k6'};
 model.d = {'ma', 'mb', 'mc'};
 
 % Non-scalar dimensions
-%model.dim.k = 6;
+% model.dim.k = 6;
 
 function rhs = hbv_rxs(t, y, p)
   kr = [ 10.^(p.k1) + p.k4, ...
@@ -108,7 +110,7 @@ del = 1;
 
 %% perturb initial guess and loosen bounds bounds on estimated parameters 
 for i = 1:numel(ind)
-  name = ['k' num2str(ind(i))];
+  name = ['k' num2str(ind(i))]
   theta0.(name) = theta0.(name) + 0.75*del;
   lb.(name) = lb.(name) - del;
   ub.(name) = ub.(name) + del;

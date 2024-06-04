@@ -25,7 +25,8 @@
 %%
 
 model = struct;
-model.transcription = 'shooting';
+% model.transcription = 'shooting';
+model.transcription = "simultaneous";
 model.x = {'ca'};
 model.p = {'k', 'n'};
 model.d = {'m_ca'};
