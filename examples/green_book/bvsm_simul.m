@@ -27,7 +27,7 @@
 % Model
 model = struct;
 model.print_level = 1;
-model.transcription = 'shooting';
+model.transcription = 'simultaneous';
 model.x = {'VR', 'nA', 'nB', 'nC', 'nD'};
 model.p = {'k1', 'k2', 'cBf'};
 model.nlp_solver_options.ipopt.mumps_scaling = 0;
