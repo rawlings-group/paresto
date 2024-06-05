@@ -48,8 +48,7 @@ nts    = 100;
 tout = linspace(0,tfinal,nts);
 
 model = struct;
-% model.transcription = 'shooting';
-model.transcription = "simultaneous";
+model.transcription = 'shooting';
 model.x = {'ca'};
 model.p = {'k'};
 model.d = {'m_ca'};

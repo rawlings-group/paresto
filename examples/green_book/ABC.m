@@ -8,7 +8,7 @@
 %%Model
 model = struct;
 model.print_level = 1;
-model.transcription = "simultaneous";
+%model.transcription = "simultaneous";
 model.transcription = "shooting";
 %model.nlp_solver_options.ipopt.linear_solver = 'ma27';
 model.nlp_solver_options.ipopt.mumps_scaling = 0;

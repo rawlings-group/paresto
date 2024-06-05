@@ -55,8 +55,7 @@ end%function
 %% nonlinear parameter estimation
 
 model = struct;
-% model.transcription = 'shooting';
-model.transcription = "simultaneous";
+model.transcription = 'shooting';
 model.x = {'ca'};
 model.p = {'n','k'};
 model.d = {'m_ca'};

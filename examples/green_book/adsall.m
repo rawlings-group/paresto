@@ -100,8 +100,7 @@ thetaub.cmp = 100;
 thetaub.time = 1;
 
 algmodel = struct;
-% algmodel.transcription = "shooting";
-algmodel.transcription = "simultaneous";
+algmodel.transcription = "shooting";
 %algmodel.nlp_solver_options.ipopt.linear_solver = 'ma27';
 algmodel.nlp_solver_options.ipopt.mumps_scaling = 0;
 % set eps to zero for algebraic model
