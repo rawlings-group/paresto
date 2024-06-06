@@ -471,6 +471,7 @@ classdef paresto < handle
         d{end+1} = dk;
         sf = self.stagefun('t', tk, 'x', xk, 'z', zk, 'p', p, 'd', dk);
         g{end+1} = sf.alg;
+        
         if lsq_ind(1)
           lsq{end+1} = sf.lsq;
         end
@@ -486,10 +487,12 @@ classdef paresto < handle
               xzc = casadi.MX.sym(['xz_' num2str(k) s], (self.nx+self.nz)*self.ord);
               w{end+1} = xzc;
               xzk = [xk;zk];
+              % w_elim{end+1} = repmat(xzk, self.ord, 1);
               w_elim{end+1} = repmat(xzk, self.ord, 1);
               % Evaluate collocation equations
               Fk = self.dynfun('x0', xk, 'xz', xzc, 'p', [tk;hk;p;dk]);
               g{end+1} = Fk.g;
+              
             case 'shooting'
               % Call ODE/DAE integrator
               Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
@@ -501,25 +504,33 @@ classdef paresto < handle
           xk = casadi.MX.sym(['x' num2str(k) s], self.nx);
           % New algebraic variable at the end of the interval
           zk = casadi.MX.sym(['z' num2str(k) s], self.nz);
+          % Measurements
+          dk = casadi.MX.sym(['d' num2str(k) s], self.nd);
+          tk = t(k+1);
           xzk = [xk;zk];
 
-          tk = t(k+1);
+          sf = self.stagefun('t', tk, 'x', xk, 'z', zk, 'p', p, 'd', dk);
           w{end+1} = xk;
           x{end+1} = xk;
           w_elim{end+1} = xk;
 
           % Enforce continuity
-          g{end+1} = xzk-Fk.xzf;
+          switch self.transcription
+            case 'simultaneous'
+              g{end+1} = xk-Fk.xf;
+              g{end+1} = sf.alg;
+            case 'shooting'
+              g{end+1} = xzk-Fk.xzf;
+            otherwise
+              error(['No such transcription: ' self.transcription]);
+          end
 
           w{end+1} = zk;
           z{end+1} = zk;
           w_elim{end+1} = zk;
-
-          % Measurements
-          dk = casadi.MX.sym(['d' num2str(k) s], self.nd);
           d{end+1} = dk;
-          sf = self.stagefun('t', tk, 'x', xk, 'z', zk, 'p', p, 'd', dk);
-          %g{end+1} = sf.alg;
+
+
           if lsq_ind(k+1)
             lsq{end+1} = sf.lsq;
           end
@@ -528,7 +539,6 @@ classdef paresto < handle
 
       % Concatenate vectors
       g = vertcat(g{:});
-      %disp(size(g))
       w = vertcat(w{:});
       sens = vertcat(sens{:});
       lsq = vertcat(lsq{:});
@@ -587,6 +597,9 @@ classdef paresto < handle
       w0 = self.to_w(x0, z0, p0);
       lbw = self.to_w(lbx, lbz, lbp);
       ubw = self.to_w(ubx, ubz, ubp);
+      traj_indices = setdiff(1:length(w0), self.thetaind);
+      lbw(traj_indices) = -inf;
+      ubw(traj_indices) = inf;
       % Log message with timings
       if (self.print_level > 0)
         msg = @(m) fprintf('paresto.paresto (t=%g ms): %s\n', 1000*toc, m);
@@ -704,7 +717,6 @@ classdef paresto < handle
   sol.lam_x = full(sol.lam_x);
   %% Ensure lam_x(~self.thetaind) is exactly zero, 
   %% i.e., trajectory variables x1, x2,... and z0, z1,... are unconstrained
-  traj_indices = setdiff(1:length(sol.lam_x), self.thetaind);
   sol.lam_x(traj_indices) = 0;
   %% Ensure lam_x(self.thetaind) is not exactly zero,
   %% i.e., enforce equality constraints 
