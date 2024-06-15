@@ -198,7 +198,7 @@ classdef paresto < handle
       ode = self.fun2sym('ode', t, yy, pp);
       alg = self.fun2sym('alg', t, yy, pp);
       % Check dg/dz
-      if alg.size(1)>0
+      if size(alg, 1)>0
         dalgdz = jacobian(alg, z);
         determinant_dalgdz = det(dalgdz);
         if is_zero(determinant_dalgdz)
