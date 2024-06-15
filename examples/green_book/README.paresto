@@ -239,4 +239,44 @@ is a high-index DAE. Such as examples/simplerxn_implicit.m
 
 19. JBR tried a different treatment of confidence intervals for small or negative eigenvalues of
     Hessian; now generates Infs when parameters have no effect, but no NaNs, i.e., avoids 0/0.
-    
+
+20. Titus fixed simultaneous option. Agrees with shooting.  Here's the timing study.
+
+Choose: simultaneous on hbv_det and hbv_red;
+Choose: shooting on bvsm, bvsm_red
+
+octave:2> runall
+
+Running book scripts.
+
+* adsone ... success (0.3673 s)
+* adsall ... success (1.263 s)
+* batch_data_solution ... success (0.4248 s)
+* bvsm ... success (9.08 s)
+* bvsm_red ... success (8.813 s)
+* estdiff ... success (0.804 s)
+* fitrtd ... success (1.74 s)
+* hbv_det ... success (91.37 s)
+* hbv_red ... success (217.2 s)
+* react2rev ... success (11.11 s)
+* ABC ... success (2.156 s)
+* Sfirstorder ... success (1.8 s)
+ans = {}(0x1)
+
+octave:1> runall_simul
+
+Running book scripts.
+
+* adsone_simul ... success (0.4105 s)
+* adsall_simul ... success (1.255 s)
+* batch_data_solution_simul ... success (0.4465 s)
+* bvsm_simul ... success (30.38 s)
+* bvsm_red_simul ... success (12.89 s)
+* estdiff_simul ... success (0.7869 s)
+* fitrtd_simul ... success (3.136 s)
+* hbv_det_simul ... success (8.642 s)
+* hbv_red_simul ... success (4.761 s)
+* react2rev_simul ... success (26.52 s)
+* ABC_simul ... success (2.115 s)
+* Sfirstorder_simul ... success (2.379 s)
+ans = {}(0x1)
