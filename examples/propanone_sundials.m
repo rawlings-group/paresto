@@ -12,7 +12,8 @@
 %% parameter estimation with paresto
 model = struct();
 model.print_level = 1;
-model.transcription = 'shooting';
+model.transcription = 'sundials';
+%%model.transcription = 'shooting';
 %% model.transcription = 'simultaneous';
 %% model.ord = 1;
 
