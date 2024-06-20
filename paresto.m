@@ -12,6 +12,9 @@ classdef paresto < handle
     nlp_presolver
     % NLP presolver options
     nlp_presolver_options
+    % NLP solver integrator options (only used for the sundials transcription
+    % options that uses sundials as the integrator during optimization).
+    nlp_solver_integrator_options
     % Dynamic model
     model
     % ODE/DAE simulator
@@ -142,6 +145,13 @@ classdef paresto < handle
         self.nlp_solver_options = model.nlp_solver_options;
       else
         self.nlp_solver_options = struct;
+      end
+
+      % NLP solver integrator options.
+      if isfield(model, 'nlp_solver_integrator_options')
+        self.nlp_solver_integrator_options = model.nlp_solver_integrator_options;
+      else
+        self.nlp_solver_integrator_options = struct;
       end
 
       % Have NLP base class calculate multipliers
@@ -392,6 +402,21 @@ classdef paresto < handle
           % Wrap rootfinder in an object with integrator syntax
           self.dynfun = casadi.Function('dynfun', {x0, z0, [t;h;p;d]}, {xzfsol}, ...
                       {'x0', 'z0', 'p'}, {'xzf'});
+        case 'sundials'
+          if self.nz==0
+            plugin = 'cvodes';
+          else
+            plugin = 'idas';
+          end%if
+          tau = casadi.MX.sym('tau');
+          x = casadi.MX.sym('x', self.daefun.sparsity_in('x'));
+          z = casadi.MX.sym('z', self.daefun.sparsity_in('z'));
+          fj = self.daefun('t', t + tau*h, 'p', p,...
+                           'x', x, 'z', z, 'd', d);
+          dae = struct('x', x, 'z', z, 't', tau, 'p', [t; h; p; d], ...
+                       'ode', fj.ode*h, 'alg', fj.alg);
+          self.dynfun = casadi.integrator('dynfun', plugin, dae, ...
+                                           self.nlp_solver_integrator_options);
         otherwise
           error(['No such transcription: ' self.transcription]);
       end
@@ -496,6 +521,8 @@ classdef paresto < handle
             case 'shooting'
               % Call ODE/DAE integrator
               Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
+            case 'sundials'
+              Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
             otherwise
               error(['No such transcription: ' self.transcription]);
           end
@@ -521,6 +548,9 @@ classdef paresto < handle
               g{end+1} = sf.alg;
             case 'shooting'
               g{end+1} = xzk-Fk.xzf;
+            case 'sundials'
+              g{end+1} = xk-Fk.xf;
+              g{end+1} = sf.alg;
             otherwise
               error(['No such transcription: ' self.transcription]);
           end
