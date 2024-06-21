@@ -23,6 +23,7 @@
 %%
 
 model=struct;
+model.transcription = 'sundials';
 model.print_level = 1;
 model.nlp_solver_options.ipopt.mumps_scaling = 0;
 model.nlp_solver_integrator_options.abstol = 1e-5;
