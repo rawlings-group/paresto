@@ -884,7 +884,7 @@ classdef paresto < handle
 	v2 = v(:,rH+1:end);
 	diag_inv_H = diag( v1*diag( 1./e(1:rH) )*v1' );
 	%% insert Inf for entries diag(inv(H)) where inverting suspect eigenvalue
-	ind = (diag(v2*v2') != 0);
+	ind = (diag(v2*v2') ~= 0);
 	diag_inv_H(ind) = inf;
       else
 	diag_inv_H = diag(v*diag(1./e)*v');
