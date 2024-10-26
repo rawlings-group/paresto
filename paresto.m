@@ -888,7 +888,7 @@ classdef paresto < handle
 	diag_inv_H(ind) = inf;
       else
 	diag_inv_H = diag(v*diag(1./e)*v');
-      endif
+      end
       % Total number of data points; either user has provided it, or 
       % make educated guess
       if (isfield(self.model, 'ndata'))
