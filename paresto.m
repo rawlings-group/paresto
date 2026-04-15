@@ -165,6 +165,11 @@ classdef paresto < handle
       msg('DAE modeling');
       self.modeling();
 
+      % Check that transcription is compatible with model
+      if self.nx == 0 && strcmp(self.transcription, 'sundials')
+      error('Sundials cannot solve a pure algebraic problem. Consider using simultaneous or shooting transcription instead.');
+      end
+
       % Collocation equations
       msg('Collocation equations');
       self.collocation()
@@ -263,6 +268,10 @@ classdef paresto < handle
       %% Allow struct for parameters differential states, algebraic states;
       %% convert to column vectors
       if (isstruct(pin))
+    
+  if self.nx == 0
+    error('simulate() uses Sundials which cannot simulate a pure algebraic problem');
+  end
 	fn = self.model.p;
 	for i = 1:numel(fn)
 	  p(i) = pin.(fn{i});
@@ -520,7 +529,8 @@ classdef paresto < handle
               
             case 'shooting'
               % Call ODE/DAE integrator
-              Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
+              dnext = casadi.MX.sym(['d' num2str(k) s], self.nd);
+              Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dnext]);
             case 'sundials'
               Fk = self.dynfun('x0', xk, 'z0', zk, 'p', [tk;hk;p;dk]);
             otherwise
@@ -532,7 +542,11 @@ classdef paresto < handle
           % New algebraic variable at the end of the interval
           zk = casadi.MX.sym(['z' num2str(k) s], self.nz);
           % Measurements
-          dk = casadi.MX.sym(['d' num2str(k) s], self.nd);
+          if strcmp(self.transcription, 'shooting')
+            dk = dnext;
+          else
+            dk = casadi.MX.sym(['d' num2str(k) s], self.nd);
+          end
           tk = t(k+1);
           xzk = [xk;zk];
 
@@ -757,6 +771,7 @@ classdef paresto < handle
 
 
 
+
 	fsol = self.fsolver('x0', sol.x, 'lam_x0', sol.lam_x, 'lam_g0', sol.lam_g,...
 			    'lbx', lbw, 'ubx', ubw, 'lbg', 0, 'ubg', 0, 'p', d,...
 			    'out_x', sol.x, 'out_lam_x', sol.lam_x, 'out_lam_g', sol.lam_g,...
@@ -882,6 +897,8 @@ classdef paresto < handle
 	v = v(:, perm);
 	v1 = v(:,1:rH);
 	v2 = v(:,rH+1:end);
+	disp(v1)
+	disp(v2)
 	diag_inv_H = diag( v1*diag( 1./e(1:rH) )*v1' );
 	%% insert Inf for entries diag(inv(H)) where inverting suspect eigenvalue
 	ind = (diag(v2*v2') ~= 0);
